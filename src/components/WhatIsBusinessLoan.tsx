@@ -26,10 +26,10 @@ export default function WhatIsBusinessLoan() {
                 <p className="text-lg md:text-xl text-gray-700 leading-relaxed mb-8">
                   Looking to expand your business? Vyapar Loans offers quick and secure loans tailored for established businesses. Whether it's for inventory, working capital, or scaling operations—we're here to help, with a simple process and fair rates.
                 </p>
-                <div className="flex items-center gap-3 text-primary font-semibold">
+                {/* <div className="flex items-center gap-3 text-primary font-semibold">
                   <span>Learn More</span>
                   <ArrowRight className="w-5 h-5" />
-                </div>
+                </div> */}
               </div>
             </ScrollAnimation>
 

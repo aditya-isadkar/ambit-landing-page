@@ -247,6 +247,7 @@ export default function MultipartForm() {
                   )}
                 </div>
 
+                {/* State Dropdown (Unchanged logic) */}
                 <div className="space-y-1">
                   <label className="block text-xs font-semibold text-gray-700">
                     State <span className="text-primary">*</span>
@@ -255,7 +256,8 @@ export default function MultipartForm() {
                     {...register("state")}
                     onChange={(e) => {
                       setValue("state", e.target.value);
-                      setValue("city", "");
+                      // Optional: clear city when state changes if you want them to re-type
+                      setValue("city", ""); 
                     }}
                     className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 hover:border-gray-300 appearance-none bg-white cursor-pointer"
                   >
@@ -271,28 +273,23 @@ export default function MultipartForm() {
                   )}
                 </div>
 
+                {/* City Input (Changed to Text Input) */}
                 <div className="space-y-1">
                   <label className="block text-xs font-semibold text-gray-700">
                     City <span className="text-primary">*</span>
                   </label>
-                  <select
+                  <input
+                    type="text"
+                    placeholder="Enter your city"
                     {...register("city")}
-                    disabled={!selectedState}
-                    className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 hover:border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 appearance-none bg-white cursor-pointer"
-                  >
-                    <option value="">Select City</option>
-                    {availableCities.map((city) => (
-                      <option key={city} value={city}>
-                        {city}
-                      </option>
-                    ))}
-                  </select>
+                    className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 hover:border-gray-300 outline-none"
+                  />
                   {errors.city && (
                     <p className="text-xs text-primary animate-fadeIn">{errors.city.message}</p>
                   )}
                 </div>
 
-                <div className="md:col-span-2 space-y-1">
+                <div className="space-y-1">
                   <label className="block text-xs font-semibold text-gray-700">
                     Pincode <span className="text-primary">*</span>
                   </label>
@@ -449,7 +446,7 @@ export default function MultipartForm() {
                 onClick={nextStep}
                 className="w-full px-6 py-3 bg-gradient-to-r from-primary to-secondary-burgundy text-white rounded-lg text-sm font-semibold hover:from-secondary-burgundy hover:to-secondary-burgundy transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2"
               >
-                <Sparkles className="w-4 h-4" />
+                {/* <Sparkles className="w-4 h-4" /> */}
                 Apply Now
               </button>
             ) : (
