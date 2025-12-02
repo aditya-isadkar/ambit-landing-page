@@ -1,13 +1,20 @@
 import Link from "next/link";
+import logo from "@/assets/image.avif"; // Importing the image from src/assets
 
 export default function Header() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm shadow-sm">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          <div className="text-2xl font-bold text-primary">
-            Ambit Finvest
-          </div>
+          {/* Replaced Text with Image */}
+          <Link href="/" className="block">
+            <img 
+              src={logo.src} // Accessing the src property of the imported image
+              alt="Ambit Finvest" 
+              className="object-cover h-[70px] md:w-[260px] w-[200px]" // Adjusted height to fit header
+            />
+          </Link>
+          
           <nav className="hidden md:flex items-center gap-8">
             <Link href="#eligibility" className="text-gray-700 hover:text-primary transition-colors">
               Eligibility
@@ -33,4 +40,3 @@ export default function Header() {
     </header>
   );
 }
-
