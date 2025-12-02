@@ -22,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${jost.variable} antialiased`}
+        className={`${jost.variable} antialiased overflow-x-hidden`}
       >
         {children}
       </body>
