@@ -38,7 +38,7 @@ export default function Hero() {
           </div>
 
           {/* Feature Boxes - Mobile */}
-          <div className="flex flex-wrap justify-start gap-10">
+          <div className="flex flex-wrap justify-start gap-3">
             <div className="bg-white/10 backdrop-blur-md rounded-xl px-4 py-3 min-w-[100px] border border-white/20 shadow-lg">
               <div className="text-xs text-white/80 mb-1">Max loan</div>
               <div className="text-xl font-bold text-white">3 Cr</div>
