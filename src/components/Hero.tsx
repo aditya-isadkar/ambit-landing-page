@@ -8,17 +8,9 @@ export default function Hero() {
       {/* =========================================
           MOBILE BANNER SECTION 
           ========================================= */}
-      {/* 
-          1. Removed 'overflow-hidden' from here so the boxes can hang out the bottom.
-          2. Kept h-[500px] to maintain banner height.
-      */}
-      <section className="relative lg:hidden h-[500px]">
-        
-        {/* Banner Background Image Wrapper
-            Added 'overflow-hidden' HERE instead, so the image stays contained 
-            but the feature boxes (which are outside this div) can spill out.
-        */}
-        <div className="absolute inset-0 overflow-hidden">
+      <section className="relative overflow-hidden lg:hidden h-[500px]">
+        {/* Banner Background Image */}
+        <div className="absolute inset-0">
           <Image
             src={bannerImage}
             alt="Business Loan Banner"
@@ -26,13 +18,14 @@ export default function Hero() {
             className="object-cover"
             priority
           />
-           {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-10 z-0">
-            <div className="absolute inset-0" style={{
-              backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
-              backgroundSize: '40px 40px'
-            }}></div>
-          </div>
+        </div>
+        
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-10 z-0">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
+            backgroundSize: '40px 40px'
+          }}></div>
         </div>
 
         {/* Banner Text Content */}
@@ -48,24 +41,29 @@ export default function Hero() {
         </div>
 
         {/* 
-            FEATURE BOXES - MOBILE
-            1. bottom-0: Position at the bottom edge.
-            2. translate-y-1/2: This moves it DOWN by 50% of its own height.
-               (This creates the "half-in, half-out" glass effect).
+            FEATURE BOXES - MOBILE (UPDATED)
+            1. flex-col: Stacks them vertically (1 above 2 above 3).
+            2. bottom-4 left-4: Positions them inside the banner at the bottom-left.
+            3. w-fit: Ensures the container only takes necessary width (not full width).
         */}
-        <div className="absolute bottom-0 left-0 z-20 w-full px-4 translate-y-1/2">
-          <div className="flex flex-wrap justify-start gap-3">
-            <div className="bg-white/10 backdrop-blur-md rounded-xl px-4 py-3 min-w-[100px] border border-white/20 shadow-lg">
-              <div className="text-xs text-white/80 mb-1">Max loan</div>
-              <div className="text-xl font-bold text-white">3 Cr</div>
+        <div className="absolute bottom-14 right-4 z-20 w-fit">
+          <div className="flex flex-col gap-3">
+            {/* Box 1 - Top */}
+            <div className="bg-white/10 backdrop-blur-md rounded-xl px-4 py-3 w-[140px] border border-white/20 shadow-lg">
+              <div className="text-center text-xs text-white/80 mb-1">Max loan</div>
+              <div className="text-center text-xl font-bold text-white">3 Cr</div>
             </div>
-            <div className="bg-white/10 backdrop-blur-md rounded-xl px-4 py-3 min-w-[100px] border border-white/20 shadow-lg">
-              <div className="text-xs text-white/80 mb-1">Quick approval</div>
-              <div className="text-xl font-bold text-white">24 Hrs</div>
+            
+            {/* Box 2 - Middle */}
+            <div className="bg-white/10 backdrop-blur-md rounded-xl px-4 py-3 w-[140px] border border-white/20 shadow-lg">
+              <div className="text-center text-xs text-white/80 mb-1">Quick approval</div>
+              <div className="text-center text-xl font-bold text-white">24 Hrs</div>
             </div>
-            <div className="bg-white/10 backdrop-blur-md rounded-xl px-4 py-3 min-w-[100px] border border-white/20 shadow-lg">
-              <div className="text-xs text-white/80 mb-1">Max tenure</div>
-              <div className="text-xl font-bold text-white">15 Yrs</div>
+
+            {/* Box 3 - Bottom */}
+            <div className="bg-white/10 backdrop-blur-md rounded-xl px-4 py-3 w-[140px] border border-white/20 shadow-lg">
+              <div className="text-center text-xs text-white/80 mb-1">Max tenure</div>
+              <div className="text-center text-xl font-bold text-white">15 Yrs</div>
             </div>
           </div>
         </div>
@@ -74,12 +72,8 @@ export default function Hero() {
       {/* =========================================
           MOBILE FORM SECTION 
           ========================================= */}
-      {/* 
-          Added 'mt-16' (margin-top).
-          Since the boxes above are pushed down ~40-50px, we need to push 
-          this section down so the boxes don't cover the form title.
-      */}
-      <section className="lg:hidden bg-white py-4 mt-16">
+      {/* Removed mt-16 because boxes are now inside the banner */}
+      <section className="lg:hidden bg-white py-4">
         <div className="container mx-auto px-4">
           <MultipartForm />
         </div>
