@@ -34,9 +34,9 @@ export default function EasySteps() {
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
               Apply in 3 Easy Steps
             </h2>
-            <p className="text-sm text-gray-600 max-w-xl mx-auto">
+            {/* <p className="text-sm text-gray-600 max-w-xl mx-auto">
               A streamlined process designed to get you the funds you need quickly
-            </p>
+            </p> */}
           </div>
         </ScrollAnimation>
 

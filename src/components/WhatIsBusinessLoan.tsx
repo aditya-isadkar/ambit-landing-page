@@ -20,11 +20,17 @@ export default function WhatIsBusinessLoan() {
                   <TrendingUp className="w-5 h-5 text-primary" />
                   <span className="text-sm font-semibold text-primary">Business Growth</span>
                 </div>
+                {/* <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+                  What is Business LoanWhat is Business Loan
+                </h2> */}
                 <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-                  What is Business Loan
+                  What is Secured Business Loan (Vyapar Loan)?
                 </h2>
-                <p className="text-lg md:text-xl text-gray-700 leading-relaxed mb-8">
+                {/* <p className="text-lg md:text-xl text-gray-700 leading-relaxed mb-8">
                   Looking to expand your business? Vyapar Loans offers quick and secure loans tailored for established businesses. Whether it's for inventory, working capital, or scaling operations—we're here to help, with a simple process and fair rates.
+                </p> */}
+                <p className="text-lg md:text-xl text-gray-700 leading-relaxed mb-8">
+                  Secured Business Loan (Vyapar Loan) offer the fastest and secure funding you need, whether you are an established enterprise or a growing startup. Our quick approval and competitive rates make it easy to quickly get the capital for inventory, working funds, or scaling operations. Get the Secured Loan that truly drives your business growth and profitability forward.
                 </p>
                 {/* <div className="flex items-center gap-3 text-primary font-semibold">
                   <span>Learn More</span>

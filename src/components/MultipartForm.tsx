@@ -10,7 +10,8 @@ const formSchema = z.object({
   // Step 1: Personal Information
   fullName: z.string().min(2, "Full Name is required"),
   email: z.string().email("Invalid email address"),
-  mobileNumber: z.string().min(10, "Valid mobile number is required"),
+  // UPDATED: Strict validation for exactly 10 digits
+  mobileNumber: z.string().length(10, "Mobile number must be exactly 10 digits"),
   otp: z.string().min(4, "OTP is required"),
   dateOfBirth: z.string().min(1, "Date of birth is required"),
   
@@ -210,6 +211,15 @@ export default function MultipartForm() {
                   <input
                     {...register("mobileNumber")}
                     type="tel"
+                    // UPDATED: Logic to prevent alphabets and enforce 10-digit limit immediately
+                    onInput={(e) => {
+                      // Remove any non-numeric characters
+                      e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
+                      // Limit the length to 10 characters
+                      if (e.currentTarget.value.length > 10) {
+                        e.currentTarget.value = e.currentTarget.value.slice(0, 10);
+                      }
+                    }}
                     className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 hover:border-gray-300"
                     placeholder="Enter mobile number"
                   />
@@ -273,7 +283,7 @@ export default function MultipartForm() {
                   )}
                 </div>
 
-                {/* City Input (Changed to Text Input) */}
+                {/* City Input */}
                 <div className="space-y-1">
                   <label className="block text-xs font-semibold text-gray-700">
                     City <span className="text-primary">*</span>

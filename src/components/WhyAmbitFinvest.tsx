@@ -20,7 +20,7 @@ export default function WhyAmbitFinvest() {
     {
       icon: Percent,
       title: "Attractive rate of interest",
-      description: "11.99% interest—no prepayment fees",
+      description: "12% interest—no prepayment fees",
       color: "from-secondary-burgundy to-primary",
     },
   ];
@@ -33,9 +33,9 @@ export default function WhyAmbitFinvest() {
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
               Why Ambit Finvest
             </h2>
-            <p className="text-xs text-gray-600 max-w-xl mx-auto">
+            {/* <p className="text-xs text-gray-600 max-w-xl mx-auto">
               Choose us for a seamless and rewarding loan experience.
-            </p>
+            </p> */}
           </div>
         </ScrollAnimation>
 

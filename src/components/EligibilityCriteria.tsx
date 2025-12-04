@@ -11,9 +11,9 @@ export default function EligibilityCriteria() {
       description: "Simplified paperwork process with digital document submission",
     },
     {
-      value: ">675",
+      value: "700+",
       label: "CIBIL Score",
-      description: "Starting from 11.99% per annum with no prepayment penalty",
+      description: "Starting from 12% per annum with no prepayment penalty",
     },
     {
       value: "≥3 years",
@@ -30,9 +30,9 @@ export default function EligibilityCriteria() {
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">
               Eligibility Criteria
             </h2>
-            <p className="text-xs text-gray-600">
+            {/* <p className="text-xs text-gray-600">
               Simple requirements to get started
-            </p>
+            </p> */}
           </div>
         </ScrollAnimation>
 
