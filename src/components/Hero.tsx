@@ -35,7 +35,7 @@ export default function Hero() {
               Secured Business Loan
             </h1>
             <p className="text-sm text-white/90">
-              Ambit Finvest: Quick, secure funding.
+              Quick & Secure Funding Solutions
             </p>
           </div>
         </div>
@@ -107,7 +107,7 @@ export default function Hero() {
                 Secured Business Loan
               </h1>
               <p className="text-lg lg:text-xl text-white/90">
-                Ambit Finvest: Quick, secure funding.
+                Quick & Secure Funding Solutions
               </p>
             </div>
             <div className="pl-4">

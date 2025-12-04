@@ -28,12 +28,12 @@ export default function Header() {
             <Link href="#faq" className="text-gray-700 hover:text-primary transition-colors">
               FAQ
             </Link>
-            <Link
+            {/* <Link
               href="#apply"
               className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-secondary-burgundy transition-colors"
             >
               Apply Now
-            </Link>
+            </Link> */}
           </nav>
         </div>
       </div>

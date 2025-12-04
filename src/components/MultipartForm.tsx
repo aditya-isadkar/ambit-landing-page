@@ -8,7 +8,7 @@ import { ChevronRight, ChevronLeft, Check, User, MapPin, Briefcase, Sparkles } f
 
 const formSchema = z.object({
   // Step 1: Personal Information
-  fullName: z.string().min(2, "Full name is required"),
+  fullName: z.string().min(2, "Full Name is required"),
   email: z.string().email("Invalid email address"),
   mobileNumber: z.string().min(10, "Valid mobile number is required"),
   otp: z.string().min(4, "OTP is required"),
@@ -175,7 +175,7 @@ export default function MultipartForm() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="block text-xs font-semibold text-gray-700">
-                    Full name <span className="text-primary">*</span>
+                    Full Name <span className="text-primary">*</span>
                   </label>
                   <input
                     {...register("fullName")}
@@ -205,7 +205,7 @@ export default function MultipartForm() {
 
                 <div className="space-y-1">
                   <label className="block text-xs font-semibold text-gray-700">
-                    Mobile number <span className="text-primary">*</span>
+                    Mobile Number <span className="text-primary">*</span>
                   </label>
                   <input
                     {...register("mobileNumber")}
