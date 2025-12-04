@@ -1,17 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ChevronRight, ChevronLeft, Check, User, MapPin, Briefcase, Sparkles } from "lucide-react";
+import { Check, User, Briefcase, Sparkles, Loader2 } from "lucide-react";
 
+// Schema Configuration
 const formSchema = z.object({
   // Step 1: Personal Information
   fullName: z.string().min(2, "Full Name is required"),
   email: z.string().email("Invalid email address"),
-  // UPDATED: Strict validation for exactly 10 digits
+  // Strict validation for exactly 10 digits
   mobileNumber: z.string().length(10, "Mobile number must be exactly 10 digits"),
+  // Adjusted min length to 4
   otp: z.string().min(4, "OTP is required"),
   dateOfBirth: z.string().min(1, "Date of birth is required"),
   
@@ -32,15 +34,6 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 const states = ["Maharashtra", "Delhi", "Karnataka", "Tamil Nadu", "Gujarat", "Rajasthan"];
-const cities: Record<string, string[]> = {
-  Maharashtra: ["Mumbai", "Pune", "Nagpur"],
-  Delhi: ["New Delhi", "Noida", "Gurgaon"],
-  Karnataka: ["Bangalore", "Mysore", "Hubli"],
-  "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai"],
-  Gujarat: ["Ahmedabad", "Surat", "Vadodara"],
-  Rajasthan: ["Jaipur", "Jodhpur", "Udaipur"],
-};
-
 const constitutions = ["Private Limited", "LLP", "Partnership", "Sole Proprietorship"];
 const ownershipProofs = ["Property Papers", "Rent Agreement", "Lease Agreement"];
 const yearsInBusiness = ["1-2 years", "3-5 years", "5-10 years", "10+ years"];
@@ -54,6 +47,17 @@ export default function MultipartForm() {
   const [isAnimating, setIsAnimating] = useState(false);
   const totalSteps = 2;
 
+  // --- OTP STATE CONFIGURATION ---
+  const [otpToken, setOtpToken] = useState<string | null>(null);
+  const [otpCountdown, setOtpCountdown] = useState(0);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [isMobileVerified, setIsMobileVerified] = useState(false);
+  const [otpError, setOtpError] = useState(""); 
+  const [otpSentMsg, setOtpSentMsg] = useState(""); // State for success message
+  const lastSentMobile = useRef(""); // To prevent double sending
+  const context = "secured_business_loan"; 
+
   const {
     register,
     handleSubmit,
@@ -66,8 +70,8 @@ export default function MultipartForm() {
     mode: "onChange",
   });
 
-  const selectedState = watch("state");
-  const availableCities = selectedState ? cities[selectedState] || [] : [];
+  const mobileNumber = watch("mobileNumber");
+  const enteredOtp = watch("otp");
 
   useEffect(() => {
     setIsAnimating(true);
@@ -75,11 +79,127 @@ export default function MultipartForm() {
     return () => clearTimeout(timer);
   }, [currentStep]);
 
+  // Countdown Timer Effect
+  useEffect(() => {
+    if (otpCountdown <= 0) return;
+    const timer = setTimeout(() => setOtpCountdown((prev) => prev - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [otpCountdown]);
+
+  // Reset verification if mobile changes
+  useEffect(() => {
+    if (mobileNumber && mobileNumber.length !== 10) {
+        setIsMobileVerified(false);
+        setOtpToken(null);
+        setOtpError("");
+        setOtpSentMsg("");
+        lastSentMobile.current = "";
+    }
+  }, [mobileNumber]);
+
+  // --- NEW: Auto-Send OTP when mobile is 10 digits ---
+  useEffect(() => {
+    const cleanMobile = mobileNumber?.replace(/\D/g, "");
+    
+    // Only send if: 10 digits, not verified, not currently sending, and not just sent to this number
+    if (
+      cleanMobile?.length === 10 && 
+      !isMobileVerified && 
+      !isSendingOtp && 
+      !otpToken && 
+      lastSentMobile.current !== cleanMobile
+    ) {
+      // Small debounce to ensure typing stopped
+      const timer = setTimeout(() => {
+        handleRequestOtp(cleanMobile);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [mobileNumber]);
+
+  // Auto-verify effect (Trigger when 4 digits are entered)
+  useEffect(() => {
+    if (enteredOtp && enteredOtp.length === 4 && otpToken && !isMobileVerified && !isVerifyingOtp) {
+       handleVerifyOtp();
+    }
+  }, [enteredOtp]);
+
+  const handleRequestOtp = async (mobileToUse?: string) => {
+    const mobile = mobileToUse || mobileNumber;
+    setOtpError("");
+    setOtpSentMsg("");
+
+    if (!mobile || !/^\d{10}$/.test(mobile)) return;
+
+    setIsSendingOtp(true);
+    try {
+      const response = await fetch("/api/otp/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mobile: mobile, context }),
+      });
+
+      if (!response.ok) throw new Error("Failed to send OTP");
+
+      const payload = await response.json();
+      setOtpToken(payload.token);
+      setOtpCountdown(payload.cooldown ?? 60);
+      setOtpSentMsg("OTP sent successfully");
+      lastSentMobile.current = mobile; // Mark as sent
+    } catch (error) {
+      console.error(error);
+      setOtpError("Error sending OTP");
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otpToken || !enteredOtp) return;
+    setOtpError("");
+
+    setIsVerifyingOtp(true);
+    try {
+      const response = await fetch("/api/otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: otpToken,
+          otp: enteredOtp,
+          mobile: mobileNumber,
+          context,
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (response.ok && payload.verified) {
+        setIsMobileVerified(true);
+        setOtpSentMsg(""); // Clear sent message once verified if desired, or keep it.
+      } else {
+        if (enteredOtp.length >= 4) {
+             setOtpError("Invalid OTP");
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      setOtpError("Verification failed");
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
   const nextStep = async () => {
     let fieldsToValidate: (keyof FormData)[] = [];
     
     if (currentStep === 1) {
       fieldsToValidate = ["fullName", "email", "mobileNumber", "otp", "dateOfBirth", "state", "city", "pincode"];
+      
+      if (!isMobileVerified) {
+        alert("Please verify your mobile number with OTP to proceed.");
+        const isFormValid = await trigger(fieldsToValidate); 
+        return;
+      }
     }
 
     const isValid = await trigger(fieldsToValidate);
@@ -88,13 +208,11 @@ export default function MultipartForm() {
     }
   };
 
-  const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
   const onSubmit = (data: FormData) => {
+    if (!isMobileVerified) {
+      alert("Mobile number verification is required.");
+      return;
+    }
     console.log("Form submitted:", data);
     alert("Application submitted successfully!");
   };
@@ -103,6 +221,7 @@ export default function MultipartForm() {
 
   return (
     <div className="w-full max-w-4xl mx-auto bg-white rounded-xl md:rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+      
       {/* Headline */}
       <div className="bg-gradient-to-r from-primary-50 to-primary-100 px-3 md:px-6 py-2 md:py-4 border-b border-primary-200">
         <h2 className="text-base md:text-xl lg:text-2xl font-bold text-gray-900 text-center">
@@ -110,7 +229,7 @@ export default function MultipartForm() {
         </h2>
       </div>
 
-      {/* Enhanced Progress Bar */}
+      {/* Progress Bar */}
       <div className="bg-gradient-to-r from-primary-50 to-primary-100 px-4 py-2 border-b border-primary-200">
         <div className="flex items-center justify-center">
           <div className="flex items-center w-full max-w-xl px-2">
@@ -121,7 +240,6 @@ export default function MultipartForm() {
               
               return (
                 <div key={step} className="flex items-center flex-1">
-                  {/* Step Circle */}
                   <div className="flex flex-col items-center relative z-10">
                     <div
                       className={`relative flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all duration-500 ${
@@ -132,20 +250,14 @@ export default function MultipartForm() {
                           : "bg-white border-gray-300 text-gray-400"
                       }`}
                     >
-                      {isCompleted ? (
-                        <Check className="w-3 h-3 animate-scaleIn" />
-                      ) : (
-                        <Icon className="w-3 h-3 transition-all" />
-                      )}
+                      {isCompleted ? <Check className="w-3 h-3" /> : <Icon className="w-3 h-3" />}
                     </div>
-                    <div className={`mt-1 text-[9px] font-semibold transition-colors text-center whitespace-nowrap ${
+                    <div className={`mt-1 text-[9px] font-semibold transition-colors text-center ${
                       isActive ? "text-primary" : isCompleted ? "text-secondary-orange" : "text-gray-400"
                     }`}>
                       {stepTitles[step - 1]}
                     </div>
                   </div>
-                  
-                  {/* Connecting Line */}
                   {step < totalSteps && (
                     <div className="flex-1 h-0.5 mx-3 relative">
                       <div className="absolute inset-0 bg-gray-200 rounded-full overflow-hidden">
@@ -153,9 +265,7 @@ export default function MultipartForm() {
                           className={`h-full transition-all duration-1000 ease-out rounded-full ${
                             currentStep > step ? "bg-secondary-orange" : "bg-gray-200"
                           }`}
-                          style={{
-                            width: currentStep > step ? "100%" : "0%",
-                          }}
+                          style={{ width: currentStep > step ? "100%" : "0%" }}
                         />
                       </div>
                     </div>
@@ -170,148 +280,116 @@ export default function MultipartForm() {
       {/* Form Content */}
       <div className="p-3 md:p-5">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 md:space-y-4">
+          
           {/* Step 1: Personal Details */}
           {currentStep === 1 && (
             <div className={`space-y-3 ${isAnimating ? "animate-slideIn" : ""}`}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                
                 <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700">
-                    Full Name <span className="text-primary">*</span>
-                  </label>
-                  <input
-                    {...register("fullName")}
-                    type="text"
-                    className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 hover:border-gray-300"
-                    placeholder="Enter your full name"
-                  />
-                  {errors.fullName && (
-                    <p className="text-xs text-primary animate-fadeIn">{errors.fullName.message}</p>
-                  )}
+                  <label className="block text-xs font-semibold text-gray-700">Full Name *</label>
+                  <input {...register("fullName")} type="text" className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" placeholder="Enter your full name" />
+                  {errors.fullName && <p className="text-xs text-primary">{errors.fullName.message}</p>}
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700">
-                    Email address <span className="text-primary">*</span>
-                  </label>
-                  <input
-                    {...register("email")}
-                    type="email"
-                    className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 hover:border-gray-300"
-                    placeholder="Enter your email"
-                  />
-                  {errors.email && (
-                    <p className="text-xs text-primary animate-fadeIn">{errors.email.message}</p>
-                  )}
+                  <label className="block text-xs font-semibold text-gray-700">Email address *</label>
+                  <input {...register("email")} type="email" className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" placeholder="Enter your email" />
+                  {errors.email && <p className="text-xs text-primary">{errors.email.message}</p>}
+                </div>
+
+                {/* MOBILE - AUTO SEND OTP, NO BUTTON */}
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-gray-700">Mobile Number *</label>
+                  <div className="relative">
+                    <input
+                      {...register("mobileNumber")}
+                      type="tel"
+                      disabled={isMobileVerified}
+                      onInput={(e) => {
+                        e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
+                        if (e.currentTarget.value.length > 10) e.currentTarget.value = e.currentTarget.value.slice(0, 10);
+                      }}
+                      className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary disabled:bg-gray-50"
+                      placeholder="Enter mobile number"
+                    />
+                    {isSendingOtp && (
+                         <div className="absolute right-3 top-2.5">
+                            <Loader2 className="w-4 h-4 text-primary animate-spin" />
+                         </div>
+                    )}
+                  </div>
+                  
+                  {/* Messages below Mobile Input */}
+                  <div className="h-4"> {/* Fixed height to prevent jumping */}
+                    {errors.mobileNumber ? (
+                      <p className="text-xs text-primary">{errors.mobileNumber.message}</p>
+                    ) : otpSentMsg ? (
+                      <p className="text-xs text-green-600 animate-fadeIn">{otpSentMsg}</p>
+                    ) : (
+                      <p className="text-xs text-gray-500">OTP will be sent to this number for verification</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* OTP FIELD */}
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-gray-700">OTP *</label>
+                  <div className="relative">
+                    <input
+                      {...register("otp")}
+                      type="text"
+                      maxLength={4} // Limit UI to 4 digits
+                      disabled={!otpToken || isMobileVerified}
+                      className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary disabled:bg-gray-50"
+                      placeholder="Enter 4-digit OTP"
+                    />
+                     {isVerifyingOtp && <div className="absolute right-3 top-2.5"><Loader2 className="w-4 h-4 text-primary animate-spin" /></div>}
+                  </div>
+                  
+                  {/* Messages below OTP Input */}
+                  <div className="h-4">
+                     {otpError ? (
+                        <p className="text-xs text-red-500">{otpError}</p>
+                     ) : isMobileVerified ? (
+                        <div className="flex items-center gap-1 text-xs text-green-600 font-medium">
+                            <Check className="w-3 h-3" /> Verified
+                        </div>
+                     ) : (
+                        <p className="text-xs text-gray-500">Enter number to get otp</p>
+                     )}
+                  </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700">
-                    Mobile Number <span className="text-primary">*</span>
-                  </label>
-                  <input
-                    {...register("mobileNumber")}
-                    type="tel"
-                    // UPDATED: Logic to prevent alphabets and enforce 10-digit limit immediately
-                    onInput={(e) => {
-                      // Remove any non-numeric characters
-                      e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
-                      // Limit the length to 10 characters
-                      if (e.currentTarget.value.length > 10) {
-                        e.currentTarget.value = e.currentTarget.value.slice(0, 10);
-                      }
-                    }}
-                    className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 hover:border-gray-300"
-                    placeholder="Enter mobile number"
-                  />
-                  {errors.mobileNumber && (
-                    <p className="text-xs text-primary animate-fadeIn">{errors.mobileNumber.message}</p>
-                  )}
+                  <label className="block text-xs font-semibold text-gray-700">Date of birth *</label>
+                  <input {...register("dateOfBirth")} type="date" className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" />
+                  {errors.dateOfBirth && <p className="text-xs text-primary">{errors.dateOfBirth.message}</p>}
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700">
-                    OTP <span className="text-primary">*</span>
-                  </label>
-                  <input
-                    {...register("otp")}
-                    type="text"
-                    className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 hover:border-gray-300"
-                    placeholder="Enter OTP"
-                  />
-                  {errors.otp && (
-                    <p className="text-xs text-primary animate-fadeIn">{errors.otp.message}</p>
-                  )}
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700">
-                    Date of birth <span className="text-primary">*</span>
-                  </label>
-                  <input
-                    {...register("dateOfBirth")}
-                    type="date"
-                    className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 hover:border-gray-300"
-                  />
-                  {errors.dateOfBirth && (
-                    <p className="text-xs text-primary animate-fadeIn">{errors.dateOfBirth.message}</p>
-                  )}
-                </div>
-
-                {/* State Dropdown (Unchanged logic) */}
-                <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700">
-                    State <span className="text-primary">*</span>
-                  </label>
+                  <label className="block text-xs font-semibold text-gray-700">State *</label>
                   <select
                     {...register("state")}
-                    onChange={(e) => {
-                      setValue("state", e.target.value);
-                      // Optional: clear city when state changes if you want them to re-type
-                      setValue("city", ""); 
-                    }}
-                    className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 hover:border-gray-300 appearance-none bg-white cursor-pointer"
+                    onChange={(e) => { setValue("state", e.target.value); setValue("city", ""); }}
+                    className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white"
                   >
                     <option value="">Select State</option>
-                    {states.map((state) => (
-                      <option key={state} value={state}>
-                        {state}
-                      </option>
-                    ))}
+                    {states.map((state) => <option key={state} value={state}>{state}</option>)}
                   </select>
-                  {errors.state && (
-                    <p className="text-xs text-primary animate-fadeIn">{errors.state.message}</p>
-                  )}
-                </div>
-
-                {/* City Input */}
-                <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700">
-                    City <span className="text-primary">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter your city"
-                    {...register("city")}
-                    className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 hover:border-gray-300 outline-none"
-                  />
-                  {errors.city && (
-                    <p className="text-xs text-primary animate-fadeIn">{errors.city.message}</p>
-                  )}
+                  {errors.state && <p className="text-xs text-primary">{errors.state.message}</p>}
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700">
-                    Pincode <span className="text-primary">*</span>
-                  </label>
-                  <input
-                    {...register("pincode")}
-                    type="text"
-                    className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 hover:border-gray-300"
-                    placeholder="Enter pincode"
-                  />
-                  {errors.pincode && (
-                    <p className="text-xs text-primary animate-fadeIn">{errors.pincode.message}</p>
-                  )}
+                  <label className="block text-xs font-semibold text-gray-700">City *</label>
+                  <input type="text" placeholder="Enter your city" {...register("city")} className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" />
+                  {errors.city && <p className="text-xs text-primary">{errors.city.message}</p>}
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-gray-700">Pincode *</label>
+                  <input {...register("pincode")} type="text" className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" placeholder="Enter pincode" />
+                  {errors.pincode && <p className="text-xs text-primary">{errors.pincode.message}</p>}
                 </div>
               </div>
             </div>
@@ -322,147 +400,79 @@ export default function MultipartForm() {
             <div className={`space-y-3 ${isAnimating ? "animate-slideIn" : ""}`}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700">
-                    Loan Amount Required <span className="text-primary">*</span>
-                  </label>
-                  <input
-                    {...register("loanAmount")}
-                    type="text"
-                    className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 hover:border-gray-300"
-                    placeholder="Enter loan amount"
-                  />
-                  {errors.loanAmount && (
-                    <p className="text-xs text-primary animate-fadeIn">{errors.loanAmount.message}</p>
-                  )}
+                  <label className="block text-xs font-semibold text-gray-700">Loan Amount Required *</label>
+                  <input {...register("loanAmount")} type="text" className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" placeholder="Enter loan amount" />
+                  {errors.loanAmount && <p className="text-xs text-primary">{errors.loanAmount.message}</p>}
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700">
-                    Select Constitution <span className="text-primary">*</span>
-                  </label>
-                  <select
-                    {...register("constitution")}
-                    className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 hover:border-gray-300 appearance-none bg-white cursor-pointer"
-                  >
+                  <label className="block text-xs font-semibold text-gray-700">Select Constitution *</label>
+                  <select {...register("constitution")} className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white">
                     <option value="">Select Constitution</option>
-                    {constitutions.map((constitution) => (
-                      <option key={constitution} value={constitution}>
-                        {constitution}
-                      </option>
-                    ))}
+                    {constitutions.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
-                  {errors.constitution && (
-                    <p className="text-xs text-primary animate-fadeIn">{errors.constitution.message}</p>
-                  )}
+                  {errors.constitution && <p className="text-xs text-primary">{errors.constitution.message}</p>}
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700">
-                    Select Ownership Proof <span className="text-primary">*</span>
-                  </label>
-                  <select
-                    {...register("ownershipProof")}
-                    className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 hover:border-gray-300 appearance-none bg-white cursor-pointer"
-                  >
+                  <label className="block text-xs font-semibold text-gray-700">Select Ownership Proof *</label>
+                  <select {...register("ownershipProof")} className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white">
                     <option value="">Select Ownership Proof</option>
-                    {ownershipProofs.map((proof) => (
-                      <option key={proof} value={proof}>
-                        {proof}
-                      </option>
-                    ))}
+                    {ownershipProofs.map((p) => <option key={p} value={p}>{p}</option>)}
                   </select>
-                  {errors.ownershipProof && (
-                    <p className="text-xs text-primary animate-fadeIn">{errors.ownershipProof.message}</p>
-                  )}
+                  {errors.ownershipProof && <p className="text-xs text-primary">{errors.ownershipProof.message}</p>}
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700">
-                    Select no. of Years in Business <span className="text-primary">*</span>
-                  </label>
-                  <select
-                    {...register("yearsInBusiness")}
-                    className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 hover:border-gray-300 appearance-none bg-white cursor-pointer"
-                  >
+                  <label className="block text-xs font-semibold text-gray-700">Years in Business *</label>
+                  <select {...register("yearsInBusiness")} className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white">
                     <option value="">Select Years</option>
-                    {yearsInBusiness.map((years) => (
-                      <option key={years} value={years}>
-                        {years}
-                      </option>
-                    ))}
+                    {yearsInBusiness.map((y) => <option key={y} value={y}>{y}</option>)}
                   </select>
-                  {errors.yearsInBusiness && (
-                    <p className="text-xs text-primary animate-fadeIn">{errors.yearsInBusiness.message}</p>
-                  )}
+                  {errors.yearsInBusiness && <p className="text-xs text-primary">{errors.yearsInBusiness.message}</p>}
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700">
-                    Select Annual Turnover <span className="text-primary">*</span>
-                  </label>
-                  <select
-                    {...register("annualTurnover")}
-                    className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 hover:border-gray-300 appearance-none bg-white cursor-pointer"
-                  >
+                  <label className="block text-xs font-semibold text-gray-700">Annual Turnover *</label>
+                  <select {...register("annualTurnover")} className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white">
                     <option value="">Select Turnover</option>
-                    {annualTurnovers.map((turnover) => (
-                      <option key={turnover} value={turnover}>
-                        {turnover}
-                      </option>
-                    ))}
+                    {annualTurnovers.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
-                  {errors.annualTurnover && (
-                    <p className="text-xs text-primary animate-fadeIn">{errors.annualTurnover.message}</p>
-                  )}
+                  {errors.annualTurnover && <p className="text-xs text-primary">{errors.annualTurnover.message}</p>}
                 </div>
 
                 <div className="md:col-span-2 space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700 mb-2">
-                    Is Your Business Registered On the GST Portal? <span className="text-primary">*</span>
-                  </label>
+                  <label className="block text-xs font-semibold text-gray-700 mb-2">Is Your Business Registered On the GST Portal? *</label>
                   <div className="flex gap-4">
                     <label className="flex items-center gap-2 cursor-pointer group">
-                      <input
-                        {...register("gstRegistered")}
-                        type="radio"
-                        value="yes"
-                        className="w-4 h-4 text-primary focus:ring-primary cursor-pointer"
-                      />
+                      <input {...register("gstRegistered")} type="radio" value="yes" className="w-4 h-4 text-primary focus:ring-primary" />
                       <span className="text-sm text-gray-700 font-medium group-hover:text-primary transition-colors">Yes</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer group">
-                      <input
-                        {...register("gstRegistered")}
-                        type="radio"
-                        value="no"
-                        className="w-4 h-4 text-primary focus:ring-primary cursor-pointer"
-                      />
+                      <input {...register("gstRegistered")} type="radio" value="no" className="w-4 h-4 text-primary focus:ring-primary" />
                       <span className="text-sm text-gray-700 font-medium group-hover:text-primary transition-colors">No</span>
                     </label>
                   </div>
-                  {errors.gstRegistered && (
-                    <p className="text-xs text-primary animate-fadeIn mt-1">{errors.gstRegistered.message}</p>
-                  )}
+                  {errors.gstRegistered && <p className="text-xs text-primary mt-1">{errors.gstRegistered.message}</p>}
                 </div>
               </div>
             </div>
           )}
 
-          {/* Apply Now Button - Full Width */}
+          {/* Navigation Buttons */}
           <div className="pt-3 border-t-2 border-gray-100">
             {currentStep < totalSteps ? (
               <button
                 type="button"
                 onClick={nextStep}
-                className="w-full px-6 py-3 bg-gradient-to-r from-primary to-secondary-burgundy text-white rounded-lg text-sm font-semibold hover:from-secondary-burgundy hover:to-secondary-burgundy transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2"
+                className="w-full px-6 py-3 bg-gradient-to-r from-primary to-secondary-burgundy text-white rounded-lg text-sm font-semibold hover:from-secondary-burgundy transition-all shadow-lg flex items-center justify-center gap-2"
               >
-                {/* <Sparkles className="w-4 h-4" /> */}
                 Apply Now
               </button>
             ) : (
               <button
                 type="submit"
-                className="w-full px-6 py-3 bg-gradient-to-r from-primary to-secondary-burgundy text-white rounded-lg text-sm font-semibold hover:from-secondary-burgundy hover:to-secondary-burgundy transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2"
+                className="w-full px-6 py-3 bg-gradient-to-r from-primary to-secondary-burgundy text-white rounded-lg text-sm font-semibold hover:from-secondary-burgundy transition-all shadow-lg flex items-center justify-center gap-2"
               >
                 <Sparkles className="w-4 h-4" />
                 Apply Now
