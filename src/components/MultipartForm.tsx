@@ -281,11 +281,16 @@ const nextStep = async () => {
   let fieldsToValidate: (keyof FormData)[] = [];
   
   if (currentStep === 1) {
-    fieldsToValidate = ["fullName", "email", "mobileNumber", "otp", "dateOfBirth", "state", "city", "pincode"];
+    // Added termsAgreed and communicationsAgreed to Step 1 validation
+    fieldsToValidate = [
+      "fullName", "email", "mobileNumber", "otp", 
+      "dateOfBirth", "state", "city", "pincode", 
+      "termsAgreed", "communicationsAgreed"
+    ];
     
     if (!isMobileVerified) {
       alert("Please verify your mobile number with OTP to proceed.");
-      const isFormValid = await trigger(fieldsToValidate); 
+      await trigger(fieldsToValidate); 
       return;
     }
   }
@@ -305,15 +310,45 @@ const onSubmit = (data: FormData) => {
   alert("Application submitted successfully!");
 };
 
-const StepIcon = stepIcons[currentStep - 1];
-
 // Calculate Date Limits for Input (18 - 60 years)
-// Logic: 
-// Max Date (youngest valid) = Today - 21 years
-// Min Date (oldest valid) = Today - 60 years
 const today = new Date();
 const maxDate = new Date(today.getFullYear() - 21, today.getMonth(), today.getDate()).toISOString().split("T")[0];
 const minDate = new Date(today.getFullYear() - 60, today.getMonth(), today.getDate()).toISOString().split("T")[0];
+
+// Reusable Consent Section Component
+const ConsentSection = () => (
+    <div className="md:col-span-2 space-y-2 mt-2">
+        <div className="flex items-start gap-2">
+            <input 
+                id="termsAgreed"
+                type="checkbox" 
+                {...register("termsAgreed")} 
+                className="mt-1 w-4 h-4 shrink-0 text-primary rounded border-gray-300 focus:ring-primary"
+            />
+            <label htmlFor="termsAgreed" className="text-xs text-gray-600 leading-tight">
+                I agree to <button type="button" onClick={() => setShowTermsModal(true)} className="text-primary font-semibold hover:underline">Terms and Conditions</button> and authorize Ambit Finvest to contact me.
+            </label>
+        </div>
+        <div className="h-4">
+            {errors.termsAgreed && <p className="text-xs text-primary pl-6">{errors.termsAgreed.message}</p>}
+        </div>
+
+        <div className="flex items-start gap-2">
+            <input 
+                id="communicationsAgreed"
+                type="checkbox" 
+                {...register("communicationsAgreed")} 
+                className="mt-1 w-4 h-4 shrink-0 text-primary rounded border-gray-300 focus:ring-primary"
+            />
+            <label htmlFor="communicationsAgreed" className="text-xs text-gray-600 leading-tight">
+                I agree to receive communications and authorize Ambit Finvest to contact me through SMS, Mail and WhatsApp.
+            </label>
+        </div>
+        <div className="h-4">
+            {errors.communicationsAgreed && <p className="text-xs text-primary pl-6">{errors.communicationsAgreed.message}</p>}
+        </div>
+    </div>
+);
 
 return (
   <div className="w-full max-w-4xl mx-auto bg-white rounded-xl md:rounded-2xl shadow-xl overflow-hidden border border-gray-100 relative">
@@ -366,7 +401,8 @@ return (
             
             return (
               <div key={step} className="flex items-center flex-1">
-                <div className="flex flex-col items-center relative z-10">
+                {/* Updated class: Added justify-center to ensure middle alignment */}
+                <div className="flex flex-col items-center justify-center relative z-10 w-full">
                   <div
                     className={`relative flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all duration-500 ${
                       isActive
@@ -378,6 +414,7 @@ return (
                   >
                     {isCompleted ? <Check className="w-3 h-3" /> : <Icon className="w-3 h-3" />}
                   </div>
+                  {/* Added text-center explicitly */}
                   <div className={`mt-1 text-[9px] font-semibold transition-colors text-center ${
                     isActive ? "text-primary" : isCompleted ? "text-secondary-orange" : "text-gray-400"
                   }`}>
@@ -409,19 +446,23 @@ return (
         
         {/* Step 1: Personal Details */}
         {currentStep === 1 && (
-          <div className={`space-y-3 ${isAnimating ? "animate-slideIn" : ""}`}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className={`space-y-1 ${isAnimating ? "animate-slideIn" : ""}`}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-1">
               
               <div className="space-y-1">
                 <label className="block text-xs font-semibold text-gray-700">Full Name *</label>
                 <input {...register("fullName")} type="text" className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" placeholder="Enter your full name" />
-                {errors.fullName && <p className="text-xs text-primary">{errors.fullName.message}</p>}
+                <div className="h-4">
+                  {errors.fullName && <p className="text-xs text-primary">{errors.fullName.message}</p>}
+                </div>
               </div>
 
               <div className="space-y-1">
                 <label className="block text-xs font-semibold text-gray-700">Email address *</label>
                 <input {...register("email")} type="email" className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" placeholder="Enter your email" />
-                {errors.email && <p className="text-xs text-primary">{errors.email.message}</p>}
+                <div className="h-4">
+                  {errors.email && <p className="text-xs text-primary">{errors.email.message}</p>}
+                </div>
               </div>
 
               {/* MOBILE */}
@@ -495,11 +536,13 @@ return (
                   max={maxDate}
                   className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" 
                 />
-                {errors.dateOfBirth ? (
-                  <p className="text-xs text-primary">{errors.dateOfBirth.message}</p>
-                ) : (
-                  <p className="text-xs text-gray-500">Age must be between 21 and 60</p>
-                )}
+                <div className="h-4">
+                  {errors.dateOfBirth ? (
+                    <p className="text-xs text-primary">{errors.dateOfBirth.message}</p>
+                  ) : (
+                    <p className="text-xs text-gray-500">Age must be between 21 and 60</p>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-1">
@@ -507,18 +550,22 @@ return (
                 <select
                   {...register("state")}
                   onChange={(e) => { setValue("state", e.target.value); setValue("city", ""); }}
-                  className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white max-h-32"
+                  className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white"
                 >
                   <option value="">Select State</option>
                   {states.map((state) => <option key={state} value={state}>{state}</option>)}
                 </select>
-                {errors.state && <p className="text-xs text-primary">{errors.state.message}</p>}
+                <div className="h-4">
+                  {errors.state && <p className="text-xs text-primary">{errors.state.message}</p>}
+                </div>
               </div>
 
               <div className="space-y-1">
                 <label className="block text-xs font-semibold text-gray-700">City *</label>
                 <input type="text" placeholder="Enter your city" {...register("city")} className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" />
-                {errors.city && <p className="text-xs text-primary">{errors.city.message}</p>}
+                <div className="h-4">
+                  {errors.city && <p className="text-xs text-primary">{errors.city.message}</p>}
+                </div>
               </div>
 
               <div className="space-y-1">
@@ -531,9 +578,13 @@ return (
                   className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" 
                   placeholder="Enter 6-digit pincode" 
                 />
-                {errors.pincode && <p className="text-xs text-primary">{errors.pincode.message}</p>}
+                <div className="h-4">
+                  {errors.pincode && <p className="text-xs text-primary">{errors.pincode.message}</p>}
+                </div>
               </div>
 
+              {/* Added Consent Section to Step 1 */}
+              <ConsentSection />
               
             </div>
           </div>
@@ -541,12 +592,14 @@ return (
 
         {/* Step 2: Business Details */}
         {currentStep === 2 && (
-          <div className={`space-y-3 ${isAnimating ? "animate-slideIn" : ""}`}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className={`space-y-1 ${isAnimating ? "animate-slideIn" : ""}`}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-1">
               <div className="space-y-1">
                 <label className="block text-xs font-semibold text-gray-700">Loan Amount Required *</label>
                 <input {...register("loanAmount")} type="text" className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" placeholder="Enter loan amount" />
-                {errors.loanAmount && <p className="text-xs text-primary">{errors.loanAmount.message}</p>}
+                <div className="h-4">
+                  {errors.loanAmount && <p className="text-xs text-primary">{errors.loanAmount.message}</p>}
+                </div>
               </div>
 
               <div className="space-y-1">
@@ -555,7 +608,9 @@ return (
                   <option value="">Select Constitution</option>
                   {constitutions.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
-                {errors.constitution && <p className="text-xs text-primary">{errors.constitution.message}</p>}
+                <div className="h-4">
+                  {errors.constitution && <p className="text-xs text-primary">{errors.constitution.message}</p>}
+                </div>
               </div>
 
               <div className="space-y-1">
@@ -564,7 +619,9 @@ return (
                   <option value="">Select Ownership Proof</option>
                   {ownershipProofs.map((p) => <option key={p} value={p}>{p}</option>)}
                 </select>
-                {errors.ownershipProof && <p className="text-xs text-primary">{errors.ownershipProof.message}</p>}
+                <div className="h-4">
+                  {errors.ownershipProof && <p className="text-xs text-primary">{errors.ownershipProof.message}</p>}
+                </div>
               </div>
 
               <div className="space-y-1">
@@ -573,7 +630,9 @@ return (
                   <option value="">Select Years</option>
                   {yearsInBusiness.map((y) => <option key={y} value={y}>{y}</option>)}
                 </select>
-                {errors.yearsInBusiness && <p className="text-xs text-primary">{errors.yearsInBusiness.message}</p>}
+                <div className="h-4">
+                  {errors.yearsInBusiness && <p className="text-xs text-primary">{errors.yearsInBusiness.message}</p>}
+                </div>
               </div>
 
               <div className="space-y-1">
@@ -582,12 +641,14 @@ return (
                   <option value="">Select Turnover</option>
                   {annualTurnovers.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
-                {errors.annualTurnover && <p className="text-xs text-primary">{errors.annualTurnover.message}</p>}
+                <div className="h-4">
+                  {errors.annualTurnover && <p className="text-xs text-primary">{errors.annualTurnover.message}</p>}
+                </div>
               </div>
 
               <div className="space-y-1">
-                <label className="block text-xs font-semibold text-gray-700 mb-2">Is Your Business Registered On the GST Portal? *</label>
-                <div className="flex gap-4">
+                <label className="block text-xs font-semibold text-gray-700">Is your Business GST registered? *</label>
+                <div className="flex gap-4 h-[38px] items-center">
                   <label className="flex items-center gap-2 cursor-pointer group">
                     <input {...register("gstRegistered")} type="radio" value="yes" className="w-4 h-4 text-primary focus:ring-primary" />
                     <span className="text-sm text-gray-700 font-medium group-hover:text-primary transition-colors">Yes</span>
@@ -597,37 +658,13 @@ return (
                     <span className="text-sm text-gray-700 font-medium group-hover:text-primary transition-colors">No</span>
                   </label>
                 </div>
-                {errors.gstRegistered && <p className="text-xs text-primary mt-1">{errors.gstRegistered.message}</p>}
+                <div className="h-4">
+                  {errors.gstRegistered && <p className="text-xs text-primary">{errors.gstRegistered.message}</p>}
+                </div>
               </div>
 
-              {/* --- CONSENT CHECKBOXES --- */}
-              <div className="md:col-span-2 pt-2 space-y-2">
-                  <div className="flex items-start gap-2">
-                      <input 
-                          id="termsAgreed"
-                          type="checkbox" 
-                          {...register("termsAgreed")} 
-                          className="mt-1 w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary"
-                      />
-                      <label htmlFor="termsAgreed" className="text-xs text-gray-600 leading-tight">
-                          I agree to <button type="button" onClick={() => setShowTermsModal(true)} className="text-primary font-semibold hover:underline">Terms and Conditions</button> and authorize Ambit Finvest to contact me.
-                      </label>
-                  </div>
-                  {errors.termsAgreed && <p className="text-xs text-primary pl-6">{errors.termsAgreed.message}</p>}
-
-                  <div className="flex items-start gap-2">
-                      <input 
-                          id="communicationsAgreed"
-                          type="checkbox" 
-                          {...register("communicationsAgreed")} 
-                          className="mt-1 w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary"
-                      />
-                      <label htmlFor="communicationsAgreed" className="text-xs text-gray-600 leading-tight">
-                          I agree to receive communications and authorize Ambit Finvest to contact me through SMS, Mail and WhatsApp.
-                      </label>
-                  </div>
-                  {errors.communicationsAgreed && <p className="text-xs text-primary pl-6">{errors.communicationsAgreed.message}</p>}
-              </div>
+              {/* Added Consent Section to Step 2 (also in Step 1) */}
+              <ConsentSection />
             </div>
           </div>
         )}
