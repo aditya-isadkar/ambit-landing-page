@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Jost } from "next/font/google";
-import Script from "next/script"; // 1. Import Script component
 import "./globals.css";
 
 const jost = Jost({
@@ -25,21 +24,6 @@ export default function RootLayout({
       <body
         className={`${jost.variable} antialiased overflow-x-hidden`}
       >
-        {/* 2. Add the Google Tag script here */}
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=AW-17763188952"
-          strategy="afterInteractive"
-        />
-        <Script id="google-ads-tag" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-
-            gtag('config', 'AW-17763188952');
-          `}
-        </Script>
-
         {children}
       </body>
     </html>
