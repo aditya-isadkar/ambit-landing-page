@@ -4,36 +4,73 @@ import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Check, User, Briefcase, Sparkles, Loader2 } from "lucide-react";
+import { Check, User, Briefcase, Sparkles, Loader2, X, ScrollText } from "lucide-react";
 
-// Schema Configuration
-const formSchema = z.object({
-  // Step 1: Personal Information
-  fullName: z.string().min(2, "Full Name is required"),
-  email: z.string().email("Invalid email address"),
-  // Strict validation for exactly 10 digits
-  mobileNumber: z.string().length(10, "Mobile number must be exactly 10 digits"),
-  // Adjusted min length to 4
-  otp: z.string().min(4, "OTP is required"),
-  dateOfBirth: z.string().min(1, "Date of birth is required"),
-  
-  // Step 2: Location
-  state: z.string().min(1, "State is required"),
-  city: z.string().min(1, "City is required"),
-  pincode: z.string().min(6, "Valid pincode is required"),
-  
-  // Step 3: Business Information
-  loanAmount: z.string().min(1, "Loan amount is required"),
-  constitution: z.string().min(1, "Constitution is required"),
-  ownershipProof: z.string().min(1, "Ownership proof is required"),
-  yearsInBusiness: z.string().min(1, "Years in business is required"),
-  annualTurnover: z.string().min(1, "Annual turnover is required"),
-  gstRegistered: z.enum(["yes", "no"], { message: "Please select an option" }),
-});
+// --- CONSTANTS & DATA ---
 
-type FormData = z.infer<typeof formSchema>;
+const TERMS_TEXT = `By proceeding, I/We hereby confirm that I/We have read, understood, accept and hereby agree to abide by all terms and conditions including the disclaimer pertaining to the aforementioned loan facility which is available in the website of the Company and I/We hereby voluntarily accord my Aadhaar consent and also hereby authorize the Company and its representatives to contact me/us through phone call, SMS, WhatsApp and/or any other mode (this shall override any registration by myself/us under DNC/NDNC) and also to make any enquires regarding my/our aforementioned application as they may consider necessary at their sole discretion. I/We also authorize the Company to make any enquiry(ies) with NSDL/Credit bureau and/ or any regulatory authority and/ or any such third party regarding my/our PAN, Credit history and/ or for any other verification(s).
 
-const states = ["Maharashtra", "Delhi", "Karnataka", "Tamil Nadu", "Gujarat", "Rajasthan"];
+I/We have no insolvency proceedings initiated against me/any of us, nor have I/We ever been adjudicated as insolvent except for the legal proceedings, the particulars whereof are given herein below.
+
+I hereby confirm that I am not a Politically Exposed Person in terms of applicable regulations prescribed by Reserve Bank of India.
+
+I/We confirm that no amount of the Credit Facility shall be used for anti-social purposes or for money laundering activities or for any purpose other than the purpose for which the Credit Facility is sanctioned and that the Company has the right to recall the entire amount of the Credit Facility, if the Credit Facility is used for any purpose other than as declared by me/us.
+
+I/We hereby provide my consent and authorize the Company and/or its affiliated partners to download my 'Know Your Customer' records/information from the Central KYC Registry. I am/We are aware that my/our KYC records/information would be downloaded from the Central KYC Registry, solely for performing customer due diligence on me/us in order to process my/ our loan application. I/We further declare that the data/ information on the Central KYC Registry is updated and has not been subjected to any change, as on the date of making the loan application.
+
+I/We hereby also confirm that all the documents submitted and also the information furnished to the Company to process my/our loan application are true, correct and complete and up to date in all respects and I/We have not suppressed and/ or withheld any information provided otherwise whether in writing or orally for the Credit Facility applied for.
+
+I/ We declare that I/ We have not made any payment in cash, bearer's cheques and/ or by any other mode along with or in connection with this Application Form to the person collecting my/our Application Form. I/ We shall not hold the Company's employees/ representatives/ authorized agents/ service providers liable for any such payment made by me/ us to the person collecting this Application Form.
+
+I/We acknowledge that the Company does not in any manner make any representation, promise, statement and/ or endorsement in respect of any other product or services, which may be provided by the Company and I/ we will not be responsible or liable in any manner whatsoever for the same. I/ We understand that the Company is a LENDER, registered with the RBI and would be lending in the required Credit Facility.
+
+I/We hereby also confirm that my/ our consent and declarations as provided herein will remain valid and abiding on me/ us even if any of the details mentioned herein above (including my/ our e-mail and/ or mobile number) changes, in which case, I/we shall forthwith inform the Company about such change.
+
+I/We have no objection to sharing of my name, mobile number, e-mail ID, PAN and /or such other information, with the Company and/ or its group companies and/ or its agents, representatives for providing me/us information on various products, offers and services provided by the Company and/ or its group companies through any mode (including but not limited to telephone calls, SMS/e-mails, letters etc.).
+
+I/ We understand that status of this Application Form will be known to me/ us within seven working days, on my e-mail ID and/or mobile number specified in this Application Form, from the date of submission of this Application Form along with all necessary documents desired by the Company duly signed by the applicant/ co-applicant(s) and guarantor(s), as the case may be.
+
+I/We hereby agree that the rate of interest is in accordance with Interest Rate Policy of the Company.`;
+
+// List sorted alphabetically
+const rawStates = [
+"Andaman and Nicobar Island",
+"Andhra Pradesh",
+"Arunachal Pradesh",
+"Assam",
+"Bihar",
+"Chandigarh",
+"Chhattisgarh",
+"Daman and Diu",
+"Delhi NCR",
+"Goa",
+"Gujarat",
+"Haryana",
+"Himachal Pradesh",
+"Jharkhand",
+"Karnataka",
+"Kerala",
+"Lakshadweep",
+"Madhya Pradesh",
+"Maharashtra",
+"Manipur",
+"Meghalaya",
+"Mizoram",
+"Nagaland",
+"Odisha",
+"Puducherry",
+"Punjab",
+"Rajasthan",
+"Sikkim",
+"Tamilnadu",
+"Telangana",
+"Tripura",
+"Uttar Pradesh",
+"Uttrakhand",
+"West Bengal"
+];
+const states = rawStates.sort();
+
 const constitutions = ["Private Limited", "LLP", "Partnership", "Sole Proprietorship"];
 const ownershipProofs = ["Property Papers", "Rent Agreement", "Lease Agreement"];
 const yearsInBusiness = ["1-2 years", "3-5 years", "5-10 years", "10+ years"];
@@ -42,445 +79,581 @@ const annualTurnovers = ["< 10 Lakhs", "10-50 Lakhs", "50 Lakhs - 1 Cr", "1-5 Cr
 const stepIcons = [User, Briefcase];
 const stepTitles = ["Personal Details", "Business Details"];
 
+// Helper function to calculate age
+const calculateAge = (dateString: string) => {
+const today = new Date();
+const birthDate = new Date(dateString);
+let age = today.getFullYear() - birthDate.getFullYear();
+const m = today.getMonth() - birthDate.getMonth();
+if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+  age--;
+}
+return age;
+};
+
+// --- SCHEMA CONFIGURATION ---
+const formSchema = z.object({
+// Step 1: Personal Information
+fullName: z.string().min(2, "Full Name is required"),
+email: z.string().email("Invalid email address"),
+mobileNumber: z.string().length(10, "Mobile number must be exactly 10 digits"),
+otp: z.string().min(4, "OTP is required"),
+
+// Date validation: 21 to 60 years old
+dateOfBirth: z.string().refine((val) => {
+  const age = calculateAge(val);
+  return age >= 21 && age <= 60;
+}, { message: "You must be between 21 and 60 years old" }),
+
+state: z.string().min(1, "State is required"),
+city: z.string().min(1, "City is required"),
+// Pincode strict 6 digits
+pincode: z.string().length(6, "Pincode must be exactly 6 digits"),
+
+// Step 2: Business Information
+loanAmount: z.string().min(1, "Loan amount is required"),
+constitution: z.string().min(1, "Constitution is required"),
+ownershipProof: z.string().min(1, "Ownership proof is required"),
+yearsInBusiness: z.string().min(1, "Years in business is required"),
+annualTurnover: z.string().min(1, "Annual turnover is required"),
+gstRegistered: z.enum(["yes", "no"], { message: "Please select an option" }),
+
+// Consent Checkboxes
+termsAgreed: z.boolean().refine((val) => val === true, {
+  message: "You must agree to the Terms and Conditions",
+}),
+communicationsAgreed: z.boolean().refine((val) => val === true, {
+  message: "You must authorize communications",
+}),
+});
+
+type FormData = z.infer<typeof formSchema>;
+
 export default function MultipartForm() {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const totalSteps = 2;
+const [currentStep, setCurrentStep] = useState(1);
+const [isAnimating, setIsAnimating] = useState(false);
+const totalSteps = 2;
 
-  // --- OTP STATE CONFIGURATION ---
-  const [otpToken, setOtpToken] = useState<string | null>(null);
-  const [otpCountdown, setOtpCountdown] = useState(0);
-  const [isSendingOtp, setIsSendingOtp] = useState(false);
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
-  const [isMobileVerified, setIsMobileVerified] = useState(false);
-  const [otpError, setOtpError] = useState(""); 
-  const [otpSentMsg, setOtpSentMsg] = useState(""); // State for success message
-  const lastSentMobile = useRef(""); // To prevent double sending
-  const context = "secured_business_loan"; 
+// Modal State
+const [showTermsModal, setShowTermsModal] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    watch,
-    setValue,
-    trigger,
-  } = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    mode: "onChange",
-  });
+// OTP STATE CONFIGURATION
+const [otpToken, setOtpToken] = useState<string | null>(null);
+const [otpCountdown, setOtpCountdown] = useState(0);
+const [isSendingOtp, setIsSendingOtp] = useState(false);
+const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+const [isMobileVerified, setIsMobileVerified] = useState(false);
+const [otpError, setOtpError] = useState(""); 
+const [otpSentMsg, setOtpSentMsg] = useState("");
+const lastSentMobile = useRef(""); 
+const context = "secured_business_loan"; 
 
-  const mobileNumber = watch("mobileNumber");
-  const enteredOtp = watch("otp");
+const {
+  register,
+  handleSubmit,
+  formState: { errors },
+  watch,
+  setValue,
+  trigger,
+} = useForm<FormData>({
+  resolver: zodResolver(formSchema),
+  mode: "onChange",
+  defaultValues: {
+    termsAgreed: true,
+    communicationsAgreed: true
+  }
+});
 
-  useEffect(() => {
-    setIsAnimating(true);
-    const timer = setTimeout(() => setIsAnimating(false), 500);
+const mobileNumber = watch("mobileNumber");
+const enteredOtp = watch("otp");
+
+useEffect(() => {
+  setIsAnimating(true);
+  const timer = setTimeout(() => setIsAnimating(false), 500);
+  return () => clearTimeout(timer);
+}, [currentStep]);
+
+// Countdown Timer Effect
+useEffect(() => {
+  if (otpCountdown <= 0) return;
+  const timer = setTimeout(() => setOtpCountdown((prev) => prev - 1), 1000);
+  return () => clearTimeout(timer);
+}, [otpCountdown]);
+
+useEffect(() => {
+  if (mobileNumber && mobileNumber.length !== 10) {
+      setIsMobileVerified(false);
+      setOtpToken(null);
+      setOtpError("");
+      setOtpSentMsg("");
+      lastSentMobile.current = "";
+  }
+}, [mobileNumber]);
+
+useEffect(() => {
+  const cleanMobile = mobileNumber?.replace(/\D/g, "");
+  if (
+    cleanMobile?.length === 10 && 
+    !isMobileVerified && 
+    !isSendingOtp && 
+    !otpToken && 
+    lastSentMobile.current !== cleanMobile
+  ) {
+    const timer = setTimeout(() => {
+      handleRequestOtp(cleanMobile);
+    }, 500);
     return () => clearTimeout(timer);
-  }, [currentStep]);
+  }
+}, [mobileNumber]);
 
-  // Countdown Timer Effect
-  useEffect(() => {
-    if (otpCountdown <= 0) return;
-    const timer = setTimeout(() => setOtpCountdown((prev) => prev - 1), 1000);
-    return () => clearTimeout(timer);
-  }, [otpCountdown]);
+useEffect(() => {
+  if (enteredOtp && enteredOtp.length === 4 && otpToken && !isMobileVerified && !isVerifyingOtp) {
+    handleVerifyOtp();
+  }
+}, [enteredOtp]);
 
-  // Reset verification if mobile changes
-  useEffect(() => {
-    if (mobileNumber && mobileNumber.length !== 10) {
-        setIsMobileVerified(false);
-        setOtpToken(null);
-        setOtpError("");
-        setOtpSentMsg("");
-        lastSentMobile.current = "";
-    }
-  }, [mobileNumber]);
+const handleRequestOtp = async (mobileToUse?: string) => {
+  const mobile = mobileToUse || mobileNumber;
+  setOtpError("");
+  setOtpSentMsg("");
 
-  // --- NEW: Auto-Send OTP when mobile is 10 digits ---
-  useEffect(() => {
-    const cleanMobile = mobileNumber?.replace(/\D/g, "");
-    
-    // Only send if: 10 digits, not verified, not currently sending, and not just sent to this number
-    if (
-      cleanMobile?.length === 10 && 
-      !isMobileVerified && 
-      !isSendingOtp && 
-      !otpToken && 
-      lastSentMobile.current !== cleanMobile
-    ) {
-      // Small debounce to ensure typing stopped
-      const timer = setTimeout(() => {
-        handleRequestOtp(cleanMobile);
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [mobileNumber]);
+  if (!mobile || !/^\d{10}$/.test(mobile)) return;
 
-  // Auto-verify effect (Trigger when 4 digits are entered)
-  useEffect(() => {
-    if (enteredOtp && enteredOtp.length === 4 && otpToken && !isMobileVerified && !isVerifyingOtp) {
-       handleVerifyOtp();
-    }
-  }, [enteredOtp]);
+  setIsSendingOtp(true);
+  try {
+    const response = await fetch("/api/otp/request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mobile: mobile, context }),
+    });
 
-  const handleRequestOtp = async (mobileToUse?: string) => {
-    const mobile = mobileToUse || mobileNumber;
-    setOtpError("");
-    setOtpSentMsg("");
+    if (!response.ok) throw new Error("Failed to send OTP");
 
-    if (!mobile || !/^\d{10}$/.test(mobile)) return;
+    const payload = await response.json();
+    setOtpToken(payload.token);
+    setOtpCountdown(payload.cooldown ?? 60);
+    setOtpSentMsg("OTP sent successfully");
+    lastSentMobile.current = mobile; 
+  } catch (error) {
+    console.error(error);
+    setOtpError("Error sending OTP");
+  } finally {
+    setIsSendingOtp(false);
+  }
+};
 
-    setIsSendingOtp(true);
-    try {
-      const response = await fetch("/api/otp/request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mobile: mobile, context }),
-      });
+const handleVerifyOtp = async () => {
+  if (!otpToken || !enteredOtp) return;
+  setOtpError("");
 
-      if (!response.ok) throw new Error("Failed to send OTP");
+  setIsVerifyingOtp(true);
+  try {
+    const response = await fetch("/api/otp/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        token: otpToken,
+        otp: enteredOtp,
+        mobile: mobileNumber,
+        context,
+      }),
+    });
 
-      const payload = await response.json();
-      setOtpToken(payload.token);
-      setOtpCountdown(payload.cooldown ?? 60);
-      setOtpSentMsg("OTP sent successfully");
-      lastSentMobile.current = mobile; // Mark as sent
-    } catch (error) {
-      console.error(error);
-      setOtpError("Error sending OTP");
-    } finally {
-      setIsSendingOtp(false);
-    }
-  };
+    const payload = await response.json();
 
-  const handleVerifyOtp = async () => {
-    if (!otpToken || !enteredOtp) return;
-    setOtpError("");
-
-    setIsVerifyingOtp(true);
-    try {
-      const response = await fetch("/api/otp/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          token: otpToken,
-          otp: enteredOtp,
-          mobile: mobileNumber,
-          context,
-        }),
-      });
-
-      const payload = await response.json();
-
-      if (response.ok && payload.verified) {
-        setIsMobileVerified(true);
-        setOtpSentMsg(""); // Clear sent message once verified if desired, or keep it.
-      } else {
-        if (enteredOtp.length >= 4) {
-             setOtpError("Invalid OTP");
-        }
-      }
-    } catch (error) {
-      console.error(error);
-      setOtpError("Verification failed");
-    } finally {
-      setIsVerifyingOtp(false);
-    }
-  };
-
-  const nextStep = async () => {
-    let fieldsToValidate: (keyof FormData)[] = [];
-    
-    if (currentStep === 1) {
-      fieldsToValidate = ["fullName", "email", "mobileNumber", "otp", "dateOfBirth", "state", "city", "pincode"];
-      
-      if (!isMobileVerified) {
-        alert("Please verify your mobile number with OTP to proceed.");
-        const isFormValid = await trigger(fieldsToValidate); 
-        return;
+    if (response.ok && payload.verified) {
+      setIsMobileVerified(true);
+      setOtpSentMsg(""); 
+    } else {
+      if (enteredOtp.length >= 4) {
+          setOtpError("Invalid OTP");
       }
     }
+  } catch (error) {
+    console.error(error);
+    setOtpError("Verification failed");
+  } finally {
+    setIsVerifyingOtp(false);
+  }
+};
 
-    const isValid = await trigger(fieldsToValidate);
-    if (isValid && currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const onSubmit = (data: FormData) => {
+const nextStep = async () => {
+  let fieldsToValidate: (keyof FormData)[] = [];
+  
+  if (currentStep === 1) {
+    fieldsToValidate = ["fullName", "email", "mobileNumber", "otp", "dateOfBirth", "state", "city", "pincode"];
+    
     if (!isMobileVerified) {
-      alert("Mobile number verification is required.");
+      alert("Please verify your mobile number with OTP to proceed.");
+      const isFormValid = await trigger(fieldsToValidate); 
       return;
     }
-    console.log("Form submitted:", data);
-    alert("Application submitted successfully!");
-  };
+  }
 
-  const StepIcon = stepIcons[currentStep - 1];
+  const isValid = await trigger(fieldsToValidate);
+  if (isValid && currentStep < totalSteps) {
+    setCurrentStep(currentStep + 1);
+  }
+};
 
-  return (
-    <div className="w-full max-w-4xl mx-auto bg-white rounded-xl md:rounded-2xl shadow-xl overflow-hidden border border-gray-100">
-      
-      {/* Headline */}
-      <div className="bg-gradient-to-r from-primary-50 to-primary-100 px-3 md:px-6 py-2 md:py-4 border-b border-primary-200">
-        <h2 className="text-base md:text-xl lg:text-2xl font-bold text-gray-900 text-center">
-          Apply for a Business Loan up to ₹3 Crore
-        </h2>
-      </div>
+const onSubmit = (data: FormData) => {
+  if (!isMobileVerified) {
+    alert("Mobile number verification is required.");
+    return;
+  }
+  console.log("Form submitted:", data);
+  alert("Application submitted successfully!");
+};
 
-      {/* Progress Bar */}
-      <div className="bg-gradient-to-r from-primary-50 to-primary-100 px-4 py-2 border-b border-primary-200">
-        <div className="flex items-center justify-center">
-          <div className="flex items-center w-full max-w-xl px-2">
-            {[1, 2].map((step) => {
-              const Icon = stepIcons[step - 1];
-              const isActive = currentStep === step;
-              const isCompleted = currentStep > step;
-              
-              return (
-                <div key={step} className="flex items-center flex-1">
-                  <div className="flex flex-col items-center relative z-10">
-                    <div
-                      className={`relative flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all duration-500 ${
-                        isActive
-                          ? "bg-primary border-primary text-white shadow-md shadow-primary/50"
-                          : isCompleted
-                          ? "bg-secondary-orange border-secondary-orange text-white"
-                          : "bg-white border-gray-300 text-gray-400"
-                      }`}
-                    >
-                      {isCompleted ? <Check className="w-3 h-3" /> : <Icon className="w-3 h-3" />}
-                    </div>
-                    <div className={`mt-1 text-[9px] font-semibold transition-colors text-center ${
-                      isActive ? "text-primary" : isCompleted ? "text-secondary-orange" : "text-gray-400"
-                    }`}>
-                      {stepTitles[step - 1]}
-                    </div>
-                  </div>
-                  {step < totalSteps && (
-                    <div className="flex-1 h-0.5 mx-3 relative">
-                      <div className="absolute inset-0 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full transition-all duration-1000 ease-out rounded-full ${
-                            currentStep > step ? "bg-secondary-orange" : "bg-gray-200"
-                          }`}
-                          style={{ width: currentStep > step ? "100%" : "0%" }}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+const StepIcon = stepIcons[currentStep - 1];
+
+// Calculate Date Limits for Input (18 - 60 years)
+// Logic: 
+// Max Date (youngest valid) = Today - 21 years
+// Min Date (oldest valid) = Today - 60 years
+const today = new Date();
+const maxDate = new Date(today.getFullYear() - 21, today.getMonth(), today.getDate()).toISOString().split("T")[0];
+const minDate = new Date(today.getFullYear() - 60, today.getMonth(), today.getDate()).toISOString().split("T")[0];
+
+return (
+  <div className="w-full max-w-4xl mx-auto bg-white rounded-xl md:rounded-2xl shadow-xl overflow-hidden border border-gray-100 relative">
+    
+    {/* --- TERMS MODAL --- */}
+    {showTermsModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fadeIn">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col relative animate-scaleIn">
+          <div className="p-4 border-b flex items-center justify-between bg-gray-50 rounded-t-xl">
+              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                  <ScrollText className="w-5 h-5 text-primary"/> Terms and Conditions
+              </h3>
+              <button 
+                  onClick={() => setShowTermsModal(false)}
+                  className="p-1 hover:bg-gray-200 rounded-full transition-colors"
+              >
+                  <X className="w-5 h-5 text-gray-500" />
+              </button>
+          </div>
+          <div className="p-6 overflow-y-auto text-xs md:text-sm text-gray-600 leading-relaxed text-justify whitespace-pre-wrap">
+              {TERMS_TEXT}
+          </div>
+          <div className="p-4 border-t bg-gray-50 rounded-b-xl flex justify-end">
+              <button 
+                  onClick={() => setShowTermsModal(false)}
+                  className="px-6 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors"
+              >
+                  I Understand
+              </button>
           </div>
         </div>
       </div>
+    )}
 
-      {/* Form Content */}
-      <div className="p-3 md:p-5">
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 md:space-y-4">
-          
-          {/* Step 1: Personal Details */}
-          {currentStep === 1 && (
-            <div className={`space-y-3 ${isAnimating ? "animate-slideIn" : ""}`}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                
-                <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700">Full Name *</label>
-                  <input {...register("fullName")} type="text" className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" placeholder="Enter your full name" />
-                  {errors.fullName && <p className="text-xs text-primary">{errors.fullName.message}</p>}
-                </div>
+    {/* Headline */}
+    <div className="bg-gradient-to-r from-primary-50 to-primary-100 px-3 md:px-6 py-2 md:py-4 border-b border-primary-200">
+      <h2 className="text-base md:text-xl lg:text-2xl font-bold text-gray-900 text-center">
+        Apply for a Business Loan up to ₹3 Crore
+      </h2>
+    </div>
 
-                <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700">Email address *</label>
-                  <input {...register("email")} type="email" className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" placeholder="Enter your email" />
-                  {errors.email && <p className="text-xs text-primary">{errors.email.message}</p>}
-                </div>
-
-                {/* MOBILE - AUTO SEND OTP, NO BUTTON */}
-                <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700">Mobile Number *</label>
-                  <div className="relative">
-                    <input
-                      {...register("mobileNumber")}
-                      type="tel"
-                      disabled={isMobileVerified}
-                      onInput={(e) => {
-                        e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
-                        if (e.currentTarget.value.length > 10) e.currentTarget.value = e.currentTarget.value.slice(0, 10);
-                      }}
-                      className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary disabled:bg-gray-50"
-                      placeholder="Enter mobile number"
-                    />
-                    {isSendingOtp && (
-                         <div className="absolute right-3 top-2.5">
-                            <Loader2 className="w-4 h-4 text-primary animate-spin" />
-                         </div>
-                    )}
-                  </div>
-                  
-                  {/* Messages below Mobile Input */}
-                  <div className="h-4"> {/* Fixed height to prevent jumping */}
-                    {errors.mobileNumber ? (
-                      <p className="text-xs text-primary">{errors.mobileNumber.message}</p>
-                    ) : otpSentMsg ? (
-                      <p className="text-xs text-green-600 animate-fadeIn">{otpSentMsg}</p>
-                    ) : (
-                      <p className="text-xs text-gray-500">OTP will be sent to this number for verification</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* OTP FIELD */}
-                <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700">OTP *</label>
-                  <div className="relative">
-                    <input
-                      {...register("otp")}
-                      type="text"
-                      maxLength={4} // Limit UI to 4 digits
-                      disabled={!otpToken || isMobileVerified}
-                      className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary disabled:bg-gray-50"
-                      placeholder="Enter 4-digit OTP"
-                    />
-                     {isVerifyingOtp && <div className="absolute right-3 top-2.5"><Loader2 className="w-4 h-4 text-primary animate-spin" /></div>}
-                  </div>
-                  
-                  {/* Messages below OTP Input */}
-                  <div className="h-4">
-                     {otpError ? (
-                        <p className="text-xs text-red-500">{otpError}</p>
-                     ) : isMobileVerified ? (
-                        <div className="flex items-center gap-1 text-xs text-green-600 font-medium">
-                            <Check className="w-3 h-3" /> Verified
-                        </div>
-                     ) : (
-                        <p className="text-xs text-gray-500">Enter number to get otp</p>
-                     )}
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700">Date of birth *</label>
-                  <input {...register("dateOfBirth")} type="date" className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" />
-                  {errors.dateOfBirth && <p className="text-xs text-primary">{errors.dateOfBirth.message}</p>}
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700">State *</label>
-                  <select
-                    {...register("state")}
-                    onChange={(e) => { setValue("state", e.target.value); setValue("city", ""); }}
-                    className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white"
+    {/* Progress Bar */}
+    <div className="bg-gradient-to-r from-primary-50 to-primary-100 px-4 py-2 border-b border-primary-200">
+      <div className="flex items-center justify-center">
+        <div className="flex items-center w-full max-w-xl px-2">
+          {[1, 2].map((step) => {
+            const Icon = stepIcons[step - 1];
+            const isActive = currentStep === step;
+            const isCompleted = currentStep > step;
+            
+            return (
+              <div key={step} className="flex items-center flex-1">
+                <div className="flex flex-col items-center relative z-10">
+                  <div
+                    className={`relative flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all duration-500 ${
+                      isActive
+                        ? "bg-primary border-primary text-white shadow-md shadow-primary/50"
+                        : isCompleted
+                        ? "bg-secondary-orange border-secondary-orange text-white"
+                        : "bg-white border-gray-300 text-gray-400"
+                    }`}
                   >
-                    <option value="">Select State</option>
-                    {states.map((state) => <option key={state} value={state}>{state}</option>)}
-                  </select>
-                  {errors.state && <p className="text-xs text-primary">{errors.state.message}</p>}
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700">City *</label>
-                  <input type="text" placeholder="Enter your city" {...register("city")} className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" />
-                  {errors.city && <p className="text-xs text-primary">{errors.city.message}</p>}
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700">Pincode *</label>
-                  <input {...register("pincode")} type="text" className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" placeholder="Enter pincode" />
-                  {errors.pincode && <p className="text-xs text-primary">{errors.pincode.message}</p>}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 2: Business Details */}
-          {currentStep === 2 && (
-            <div className={`space-y-3 ${isAnimating ? "animate-slideIn" : ""}`}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700">Loan Amount Required *</label>
-                  <input {...register("loanAmount")} type="text" className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" placeholder="Enter loan amount" />
-                  {errors.loanAmount && <p className="text-xs text-primary">{errors.loanAmount.message}</p>}
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700">Select Constitution *</label>
-                  <select {...register("constitution")} className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white">
-                    <option value="">Select Constitution</option>
-                    {constitutions.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                  {errors.constitution && <p className="text-xs text-primary">{errors.constitution.message}</p>}
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700">Select Ownership Proof *</label>
-                  <select {...register("ownershipProof")} className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white">
-                    <option value="">Select Ownership Proof</option>
-                    {ownershipProofs.map((p) => <option key={p} value={p}>{p}</option>)}
-                  </select>
-                  {errors.ownershipProof && <p className="text-xs text-primary">{errors.ownershipProof.message}</p>}
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700">Years in Business *</label>
-                  <select {...register("yearsInBusiness")} className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white">
-                    <option value="">Select Years</option>
-                    {yearsInBusiness.map((y) => <option key={y} value={y}>{y}</option>)}
-                  </select>
-                  {errors.yearsInBusiness && <p className="text-xs text-primary">{errors.yearsInBusiness.message}</p>}
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700">Annual Turnover *</label>
-                  <select {...register("annualTurnover")} className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white">
-                    <option value="">Select Turnover</option>
-                    {annualTurnovers.map((t) => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                  {errors.annualTurnover && <p className="text-xs text-primary">{errors.annualTurnover.message}</p>}
-                </div>
-
-                <div className="md:col-span-2 space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700 mb-2">Is Your Business Registered On the GST Portal? *</label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer group">
-                      <input {...register("gstRegistered")} type="radio" value="yes" className="w-4 h-4 text-primary focus:ring-primary" />
-                      <span className="text-sm text-gray-700 font-medium group-hover:text-primary transition-colors">Yes</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer group">
-                      <input {...register("gstRegistered")} type="radio" value="no" className="w-4 h-4 text-primary focus:ring-primary" />
-                      <span className="text-sm text-gray-700 font-medium group-hover:text-primary transition-colors">No</span>
-                    </label>
+                    {isCompleted ? <Check className="w-3 h-3" /> : <Icon className="w-3 h-3" />}
                   </div>
-                  {errors.gstRegistered && <p className="text-xs text-primary mt-1">{errors.gstRegistered.message}</p>}
+                  <div className={`mt-1 text-[9px] font-semibold transition-colors text-center ${
+                    isActive ? "text-primary" : isCompleted ? "text-secondary-orange" : "text-gray-400"
+                  }`}>
+                    {stepTitles[step - 1]}
+                  </div>
                 </div>
+                {step < totalSteps && (
+                  <div className="flex-1 h-0.5 mx-3 relative">
+                    <div className="absolute inset-0 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all duration-1000 ease-out rounded-full ${
+                          currentStep > step ? "bg-secondary-orange" : "bg-gray-200"
+                        }`}
+                        style={{ width: currentStep > step ? "100%" : "0%" }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
-
-          {/* Navigation Buttons */}
-          <div className="pt-3 border-t-2 border-gray-100">
-            {currentStep < totalSteps ? (
-              <button
-                type="button"
-                onClick={nextStep}
-                className="w-full px-6 py-3 bg-gradient-to-r from-primary to-secondary-burgundy text-white rounded-lg text-sm font-semibold hover:from-secondary-burgundy transition-all shadow-lg flex items-center justify-center gap-2"
-              >
-                Apply Now
-              </button>
-            ) : (
-              <button
-                type="submit"
-                className="w-full px-6 py-3 bg-gradient-to-r from-primary to-secondary-burgundy text-white rounded-lg text-sm font-semibold hover:from-secondary-burgundy transition-all shadow-lg flex items-center justify-center gap-2"
-              >
-                <Sparkles className="w-4 h-4" />
-                Apply Now
-              </button>
-            )}
-          </div>
-        </form>
+            );
+          })}
+        </div>
       </div>
     </div>
-  );
+
+    {/* Form Content */}
+    <div className="p-3 md:p-5">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 md:space-y-4">
+        
+        {/* Step 1: Personal Details */}
+        {currentStep === 1 && (
+          <div className={`space-y-3 ${isAnimating ? "animate-slideIn" : ""}`}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-gray-700">Full Name *</label>
+                <input {...register("fullName")} type="text" className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" placeholder="Enter your full name" />
+                {errors.fullName && <p className="text-xs text-primary">{errors.fullName.message}</p>}
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-gray-700">Email address *</label>
+                <input {...register("email")} type="email" className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" placeholder="Enter your email" />
+                {errors.email && <p className="text-xs text-primary">{errors.email.message}</p>}
+              </div>
+
+              {/* MOBILE */}
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-gray-700">Mobile Number *</label>
+                <div className="relative">
+                  <input
+                    {...register("mobileNumber")}
+                    type="tel"
+                    disabled={isMobileVerified}
+                    onInput={(e) => {
+                      e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
+                      if (e.currentTarget.value.length > 10) e.currentTarget.value = e.currentTarget.value.slice(0, 10);
+                    }}
+                    className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary disabled:bg-gray-50"
+                    placeholder="Enter mobile number"
+                  />
+                  {isSendingOtp && (
+                      <div className="absolute right-3 top-2.5">
+                          <Loader2 className="w-4 h-4 text-primary animate-spin" />
+                      </div>
+                  )}
+                </div>
+                <div className="h-4">
+                  {errors.mobileNumber ? (
+                    <p className="text-xs text-primary">{errors.mobileNumber.message}</p>
+                  ) : otpSentMsg ? (
+                    <p className="text-xs text-green-600 animate-fadeIn">{otpSentMsg}</p>
+                  ) : (
+                    <p className="text-xs text-gray-500">OTP will be sent to this number</p>
+                  )}
+                </div>
+              </div>
+
+              {/* OTP */}
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-gray-700">OTP *</label>
+                <div className="relative">
+                  <input
+                    {...register("otp")}
+                    type="text"
+                    maxLength={4} 
+                    disabled={!otpToken || isMobileVerified}
+                    onInput={(e) => {
+                      e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
+                    }}
+                    className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary disabled:bg-gray-50"
+                    placeholder="Enter 4-digit OTP"
+                  />
+                  {isVerifyingOtp && <div className="absolute right-3 top-2.5"><Loader2 className="w-4 h-4 text-primary animate-spin" /></div>}
+                </div>
+                <div className="h-4">
+                  {otpError ? (
+                      <p className="text-xs text-red-500">{otpError}</p>
+                  ) : isMobileVerified ? (
+                      <div className="flex items-center gap-1 text-xs text-green-600 font-medium">
+                          <Check className="w-3 h-3" /> Verified
+                      </div>
+                  ) : (
+                      <p className="text-xs text-gray-500">Enter number to get otp</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-gray-700">Date of birth *</label>
+                <input 
+                  {...register("dateOfBirth")} 
+                  type="date" 
+                  min={minDate}
+                  max={maxDate}
+                  className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" 
+                />
+                {errors.dateOfBirth ? (
+                  <p className="text-xs text-primary">{errors.dateOfBirth.message}</p>
+                ) : (
+                  <p className="text-xs text-gray-500">Age must be between 21 and 60</p>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-gray-700">State *</label>
+                <select
+                  {...register("state")}
+                  onChange={(e) => { setValue("state", e.target.value); setValue("city", ""); }}
+                  className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white max-h-32"
+                >
+                  <option value="">Select State</option>
+                  {states.map((state) => <option key={state} value={state}>{state}</option>)}
+                </select>
+                {errors.state && <p className="text-xs text-primary">{errors.state.message}</p>}
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-gray-700">City *</label>
+                <input type="text" placeholder="Enter your city" {...register("city")} className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" />
+                {errors.city && <p className="text-xs text-primary">{errors.city.message}</p>}
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-gray-700">Pincode *</label>
+                <input 
+                  {...register("pincode")} 
+                  type="text" 
+                  maxLength={6}
+                  onInput={(e) => e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '')}
+                  className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" 
+                  placeholder="Enter 6-digit pincode" 
+                />
+                {errors.pincode && <p className="text-xs text-primary">{errors.pincode.message}</p>}
+              </div>
+
+              
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Business Details */}
+        {currentStep === 2 && (
+          <div className={`space-y-3 ${isAnimating ? "animate-slideIn" : ""}`}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-gray-700">Loan Amount Required *</label>
+                <input {...register("loanAmount")} type="text" className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" placeholder="Enter loan amount" />
+                {errors.loanAmount && <p className="text-xs text-primary">{errors.loanAmount.message}</p>}
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-gray-700">Select Constitution *</label>
+                <select {...register("constitution")} className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white">
+                  <option value="">Select Constitution</option>
+                  {constitutions.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+                {errors.constitution && <p className="text-xs text-primary">{errors.constitution.message}</p>}
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-gray-700">Select Ownership Proof *</label>
+                <select {...register("ownershipProof")} className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white">
+                  <option value="">Select Ownership Proof</option>
+                  {ownershipProofs.map((p) => <option key={p} value={p}>{p}</option>)}
+                </select>
+                {errors.ownershipProof && <p className="text-xs text-primary">{errors.ownershipProof.message}</p>}
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-gray-700">Years in Business *</label>
+                <select {...register("yearsInBusiness")} className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white">
+                  <option value="">Select Years</option>
+                  {yearsInBusiness.map((y) => <option key={y} value={y}>{y}</option>)}
+                </select>
+                {errors.yearsInBusiness && <p className="text-xs text-primary">{errors.yearsInBusiness.message}</p>}
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-gray-700">Annual Turnover *</label>
+                <select {...register("annualTurnover")} className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white">
+                  <option value="">Select Turnover</option>
+                  {annualTurnovers.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+                {errors.annualTurnover && <p className="text-xs text-primary">{errors.annualTurnover.message}</p>}
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-gray-700 mb-2">Is Your Business Registered On the GST Portal? *</label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <input {...register("gstRegistered")} type="radio" value="yes" className="w-4 h-4 text-primary focus:ring-primary" />
+                    <span className="text-sm text-gray-700 font-medium group-hover:text-primary transition-colors">Yes</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <input {...register("gstRegistered")} type="radio" value="no" className="w-4 h-4 text-primary focus:ring-primary" />
+                    <span className="text-sm text-gray-700 font-medium group-hover:text-primary transition-colors">No</span>
+                  </label>
+                </div>
+                {errors.gstRegistered && <p className="text-xs text-primary mt-1">{errors.gstRegistered.message}</p>}
+              </div>
+
+              {/* --- CONSENT CHECKBOXES --- */}
+              <div className="md:col-span-2 pt-2 space-y-2">
+                  <div className="flex items-start gap-2">
+                      <input 
+                          id="termsAgreed"
+                          type="checkbox" 
+                          {...register("termsAgreed")} 
+                          className="mt-1 w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary"
+                      />
+                      <label htmlFor="termsAgreed" className="text-xs text-gray-600 leading-tight">
+                          I agree to <button type="button" onClick={() => setShowTermsModal(true)} className="text-primary font-semibold hover:underline">Terms and Conditions</button> and authorize Ambit Finvest to contact me.
+                      </label>
+                  </div>
+                  {errors.termsAgreed && <p className="text-xs text-primary pl-6">{errors.termsAgreed.message}</p>}
+
+                  <div className="flex items-start gap-2">
+                      <input 
+                          id="communicationsAgreed"
+                          type="checkbox" 
+                          {...register("communicationsAgreed")} 
+                          className="mt-1 w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary"
+                      />
+                      <label htmlFor="communicationsAgreed" className="text-xs text-gray-600 leading-tight">
+                          I agree to receive communications and authorize Ambit Finvest to contact me through SMS, Mail and WhatsApp.
+                      </label>
+                  </div>
+                  {errors.communicationsAgreed && <p className="text-xs text-primary pl-6">{errors.communicationsAgreed.message}</p>}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Navigation Buttons */}
+        <div className="pt-3 border-t-2 border-gray-100">
+          {currentStep < totalSteps ? (
+            <button
+              type="button"
+              onClick={nextStep}
+              className="w-full px-6 py-3 bg-gradient-to-r from-primary to-secondary-burgundy text-white rounded-lg text-sm font-semibold hover:from-secondary-burgundy transition-all shadow-lg flex items-center justify-center gap-2"
+            >
+              Apply Now
+            </button>
+          ) : (
+            <button
+              type="submit"
+              className="w-full px-6 py-3 bg-gradient-to-r from-primary to-secondary-burgundy text-white rounded-lg text-sm font-semibold hover:from-secondary-burgundy transition-all shadow-lg flex items-center justify-center gap-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              Apply Now
+            </button>
+          )}
+        </div>
+      </form>
+    </div>
+  </div>
+);
 }
