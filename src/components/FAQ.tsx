@@ -195,8 +195,11 @@ export default function FAQ() {
   };
 
   return (
-    <section className="py-20 bg-white">
-      <div className="container mx-auto px-4">
+    <section className="py-16 bg-gradient-to-br from-gray-50 via-white to-gray-50 relative overflow-hidden">
+      {/* Decorative Elements */}
+      <div className="absolute top-0 right-0 w-1/2 h-full bg-primary-50/30 transform skew-x-12 origin-top"></div>
+
+      <div className="container mx-auto px-4 relative z-10">
         <ScrollAnimation direction="up">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">

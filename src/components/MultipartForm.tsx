@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom"; // IMPORTED
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Check, User, Briefcase, Sparkles, Loader2, X, ScrollText } from "lucide-react";
+import { Check, User, Briefcase, Loader2, X, ScrollText, ChevronDown } from "lucide-react";
 
 // --- CONSTANTS & DATA ---
 
@@ -136,6 +137,11 @@ const totalSteps = 2;
 
 // Modal State
 const [showTermsModal, setShowTermsModal] = useState(false);
+const [mounted, setMounted] = useState(false); // NEW STATE FOR PORTAL
+
+// State Dropdown State
+const [isStateDropdownOpen, setIsStateDropdownOpen] = useState(false);
+const stateDropdownRef = useRef<HTMLDivElement>(null);
 
 // OTP STATE CONFIGURATION
 const [otpToken, setOtpToken] = useState<string | null>(null);
@@ -157,7 +163,8 @@ const {
   trigger,
 } = useForm<FormData>({
   resolver: zodResolver(formSchema),
-  mode: "onChange",
+  mode: "onSubmit", // Validation only triggers on submit or manual trigger
+  reValidateMode: "onChange", 
   defaultValues: {
     termsAgreed: true,
     communicationsAgreed: true
@@ -166,12 +173,43 @@ const {
 
 const mobileNumber = watch("mobileNumber");
 const enteredOtp = watch("otp");
+const selectedState = watch("state");
+
+// --- MOUNT EFFECT ---
+useEffect(() => {
+    setMounted(true);
+}, []);
+
+// --- SCROLL LOCK EFFECT ---
+// This prevents background scrolling when modal is open
+useEffect(() => {
+    if (showTermsModal) {
+        document.body.style.overflow = "hidden";
+    } else {
+        document.body.style.overflow = "unset";
+    }
+    // Cleanup
+    return () => {
+        document.body.style.overflow = "unset";
+    };
+}, [showTermsModal]);
 
 useEffect(() => {
   setIsAnimating(true);
   const timer = setTimeout(() => setIsAnimating(false), 500);
   return () => clearTimeout(timer);
 }, [currentStep]);
+
+// Close dropdown when clicking outside
+useEffect(() => {
+  function handleClickOutside(event: MouseEvent) {
+    if (stateDropdownRef.current && !stateDropdownRef.current.contains(event.target as Node)) {
+      setIsStateDropdownOpen(false);
+    }
+  }
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => document.removeEventListener("mousedown", handleClickOutside);
+}, []);
 
 // Countdown Timer Effect
 useEffect(() => {
@@ -278,26 +316,34 @@ const handleVerifyOtp = async () => {
 };
 
 const nextStep = async () => {
-  let fieldsToValidate: (keyof FormData)[] = [];
+  // Define strict list of fields for Step 1
+  const step1Fields: (keyof FormData)[] = [
+    "fullName", 
+    "email", 
+    "mobileNumber", 
+    "otp", 
+    "dateOfBirth", 
+    "state", 
+    "city", 
+    "pincode", 
+    "termsAgreed", 
+    "communicationsAgreed"
+  ];
   
   if (currentStep === 1) {
-    // Added termsAgreed and communicationsAgreed to Step 1 validation
-    fieldsToValidate = [
-      "fullName", "email", "mobileNumber", "otp", 
-      "dateOfBirth", "state", "city", "pincode", 
-      "termsAgreed", "communicationsAgreed"
-    ];
-    
     if (!isMobileVerified) {
       alert("Please verify your mobile number with OTP to proceed.");
-      await trigger(fieldsToValidate); 
+      await trigger(step1Fields); 
       return;
     }
-  }
 
-  const isValid = await trigger(fieldsToValidate);
-  if (isValid && currentStep < totalSteps) {
-    setCurrentStep(currentStep + 1);
+    // Explicitly trigger validation ONLY for Step 1 fields
+    // This ensures Step 2 errors are NOT triggered
+    const isValid = await trigger(step1Fields);
+    
+    if (isValid) {
+      setCurrentStep(currentStep + 1);
+    }
   }
 };
 
@@ -330,7 +376,7 @@ const ConsentSection = () => (
             </label>
         </div>
         <div className="h-4">
-            {errors.termsAgreed && <p className="text-xs text-primary pl-6">{errors.termsAgreed.message}</p>}
+            {errors.termsAgreed && <p className="text-xs text-red-500 pl-6">{errors.termsAgreed.message}</p>}
         </div>
 
         <div className="flex items-start gap-2">
@@ -345,7 +391,7 @@ const ConsentSection = () => (
             </label>
         </div>
         <div className="h-4">
-            {errors.communicationsAgreed && <p className="text-xs text-primary pl-6">{errors.communicationsAgreed.message}</p>}
+            {errors.communicationsAgreed && <p className="text-xs text-red-500 pl-6">{errors.communicationsAgreed.message}</p>}
         </div>
     </div>
 );
@@ -353,10 +399,10 @@ const ConsentSection = () => (
 return (
   <div className="w-full max-w-4xl mx-auto bg-white rounded-xl md:rounded-2xl shadow-xl overflow-hidden border border-gray-100 relative">
     
-    {/* --- TERMS MODAL --- */}
-    {showTermsModal && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fadeIn">
-        <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col relative animate-scaleIn">
+    {/* --- TERMS MODAL (WRAPPED IN PORTAL) --- */}
+    {showTermsModal && mounted && createPortal(
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fadeIn">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[70vh] flex flex-col relative animate-scaleIn">
           <div className="p-4 border-b flex items-center justify-between bg-gray-50 rounded-t-xl">
               <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                   <ScrollText className="w-5 h-5 text-primary"/> Terms and Conditions
@@ -380,7 +426,8 @@ return (
               </button>
           </div>
         </div>
-      </div>
+      </div>,
+      document.body
     )}
 
     {/* Headline */}
@@ -401,7 +448,6 @@ return (
             
             return (
               <div key={step} className="flex items-center flex-1">
-                {/* Updated class: Added justify-center to ensure middle alignment */}
                 <div className="flex flex-col items-center justify-center relative z-10 w-full">
                   <div
                     className={`relative flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all duration-500 ${
@@ -414,7 +460,6 @@ return (
                   >
                     {isCompleted ? <Check className="w-3 h-3" /> : <Icon className="w-3 h-3" />}
                   </div>
-                  {/* Added text-center explicitly */}
                   <div className={`mt-1 text-[9px] font-semibold transition-colors text-center ${
                     isActive ? "text-primary" : isCompleted ? "text-secondary-orange" : "text-gray-400"
                   }`}>
@@ -453,7 +498,7 @@ return (
                 <label className="block text-xs font-semibold text-gray-700">Full Name *</label>
                 <input {...register("fullName")} type="text" className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" placeholder="Enter your full name" />
                 <div className="h-4">
-                  {errors.fullName && <p className="text-xs text-primary">{errors.fullName.message}</p>}
+                  {errors.fullName && <p className="text-xs text-red-500">{errors.fullName.message}</p>}
                 </div>
               </div>
 
@@ -461,7 +506,7 @@ return (
                 <label className="block text-xs font-semibold text-gray-700">Email address *</label>
                 <input {...register("email")} type="email" className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" placeholder="Enter your email" />
                 <div className="h-4">
-                  {errors.email && <p className="text-xs text-primary">{errors.email.message}</p>}
+                  {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
                 </div>
               </div>
 
@@ -488,7 +533,7 @@ return (
                 </div>
                 <div className="h-4">
                   {errors.mobileNumber ? (
-                    <p className="text-xs text-primary">{errors.mobileNumber.message}</p>
+                    <p className="text-xs text-red-500">{errors.mobileNumber.message}</p>
                   ) : otpSentMsg ? (
                     <p className="text-xs text-green-600 animate-fadeIn">{otpSentMsg}</p>
                   ) : (
@@ -538,25 +583,49 @@ return (
                 />
                 <div className="h-4">
                   {errors.dateOfBirth ? (
-                    <p className="text-xs text-primary">{errors.dateOfBirth.message}</p>
+                    <p className="text-xs text-red-500">{errors.dateOfBirth.message}</p>
                   ) : (
                     <p className="text-xs text-gray-500">Age must be between 21 and 60</p>
                   )}
                 </div>
               </div>
 
-              <div className="space-y-1">
+              {/* Custom State Dropdown */}
+              <div className="space-y-1 relative" ref={stateDropdownRef}>
                 <label className="block text-xs font-semibold text-gray-700">State *</label>
-                <select
-                  {...register("state")}
-                  onChange={(e) => { setValue("state", e.target.value); setValue("city", ""); }}
-                  className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white"
+                {/* Hidden input to ensure validation works with RHF */}
+                <input type="hidden" {...register("state")} />
+                
+                <div 
+                    onClick={() => setIsStateDropdownOpen(!isStateDropdownOpen)}
+                    className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white flex justify-between items-center cursor-pointer"
                 >
-                  <option value="">Select State</option>
-                  {states.map((state) => <option key={state} value={state}>{state}</option>)}
-                </select>
+                    <span className={selectedState ? "text-black" : "text-gray-500"}>
+                        {selectedState || "Select State"}
+                    </span>
+                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isStateDropdownOpen ? 'rotate-180' : ''}`} />
+                </div>
+                
+                {isStateDropdownOpen && (
+                    <ul className="absolute z-50 left-0 right-0 mt-1 bg-white border-2 border-gray-100 rounded-lg shadow-xl max-h-40 overflow-y-auto">
+                        {states.map((state) => (
+                            <li 
+                                key={state} 
+                                onClick={() => {
+                                    setValue("state", state, { shouldValidate: true });
+                                    setValue("city", "");
+                                    setIsStateDropdownOpen(false);
+                                }}
+                                className="px-3 py-2 text-sm hover:bg-gray-50 hover:text-primary cursor-pointer transition-colors"
+                            >
+                                {state}
+                            </li>
+                        ))}
+                    </ul>
+                )}
+                
                 <div className="h-4">
-                  {errors.state && <p className="text-xs text-primary">{errors.state.message}</p>}
+                  {errors.state && <p className="text-xs text-red-500">{errors.state.message}</p>}
                 </div>
               </div>
 
@@ -564,7 +633,7 @@ return (
                 <label className="block text-xs font-semibold text-gray-700">City *</label>
                 <input type="text" placeholder="Enter your city" {...register("city")} className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" />
                 <div className="h-4">
-                  {errors.city && <p className="text-xs text-primary">{errors.city.message}</p>}
+                  {errors.city && <p className="text-xs text-red-500">{errors.city.message}</p>}
                 </div>
               </div>
 
@@ -579,7 +648,7 @@ return (
                   placeholder="Enter 6-digit pincode" 
                 />
                 <div className="h-4">
-                  {errors.pincode && <p className="text-xs text-primary">{errors.pincode.message}</p>}
+                  {errors.pincode && <p className="text-xs text-red-500">{errors.pincode.message}</p>}
                 </div>
               </div>
 
@@ -598,7 +667,7 @@ return (
                 <label className="block text-xs font-semibold text-gray-700">Loan Amount Required *</label>
                 <input {...register("loanAmount")} type="text" className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" placeholder="Enter loan amount" />
                 <div className="h-4">
-                  {errors.loanAmount && <p className="text-xs text-primary">{errors.loanAmount.message}</p>}
+                  {errors.loanAmount && <p className="text-xs text-red-500">{errors.loanAmount.message}</p>}
                 </div>
               </div>
 
@@ -609,7 +678,7 @@ return (
                   {constitutions.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
                 <div className="h-4">
-                  {errors.constitution && <p className="text-xs text-primary">{errors.constitution.message}</p>}
+                  {errors.constitution && <p className="text-xs text-red-500">{errors.constitution.message}</p>}
                 </div>
               </div>
 
@@ -620,7 +689,7 @@ return (
                   {ownershipProofs.map((p) => <option key={p} value={p}>{p}</option>)}
                 </select>
                 <div className="h-4">
-                  {errors.ownershipProof && <p className="text-xs text-primary">{errors.ownershipProof.message}</p>}
+                  {errors.ownershipProof && <p className="text-xs text-red-500">{errors.ownershipProof.message}</p>}
                 </div>
               </div>
 
@@ -631,7 +700,7 @@ return (
                   {yearsInBusiness.map((y) => <option key={y} value={y}>{y}</option>)}
                 </select>
                 <div className="h-4">
-                  {errors.yearsInBusiness && <p className="text-xs text-primary">{errors.yearsInBusiness.message}</p>}
+                  {errors.yearsInBusiness && <p className="text-xs text-red-500">{errors.yearsInBusiness.message}</p>}
                 </div>
               </div>
 
@@ -642,7 +711,7 @@ return (
                   {annualTurnovers.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
                 <div className="h-4">
-                  {errors.annualTurnover && <p className="text-xs text-primary">{errors.annualTurnover.message}</p>}
+                  {errors.annualTurnover && <p className="text-xs text-red-500">{errors.annualTurnover.message}</p>}
                 </div>
               </div>
 
@@ -659,7 +728,7 @@ return (
                   </label>
                 </div>
                 <div className="h-4">
-                  {errors.gstRegistered && <p className="text-xs text-primary">{errors.gstRegistered.message}</p>}
+                  {errors.gstRegistered && <p className="text-xs text-red-500">{errors.gstRegistered.message}</p>}
                 </div>
               </div>
 
@@ -684,7 +753,6 @@ return (
               type="submit"
               className="w-full px-6 py-3 bg-gradient-to-r from-primary to-secondary-burgundy text-white rounded-lg text-sm font-semibold hover:from-secondary-burgundy transition-all shadow-lg flex items-center justify-center gap-2"
             >
-              <Sparkles className="w-4 h-4" />
               Apply Now
             </button>
           )}
