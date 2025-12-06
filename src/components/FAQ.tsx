@@ -9,7 +9,7 @@ const faqs = [
     question: "What is a secured business loan?",
     answer: (
       <p>
-        It is a business loan against property, where you pledge an asset as
+        It is a business loan against property,where you pledge an asset as
         collateral. If you default, the lender can take the collateral to
         recover the loan.
       </p>
