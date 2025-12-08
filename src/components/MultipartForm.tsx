@@ -637,7 +637,7 @@ return (
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 mt-4">
                 <div className="relative">
                   <input 
                     {...register("dateOfBirth")} 
@@ -665,7 +665,7 @@ return (
               </div>
 
               {/* Custom State Dropdown */}
-              <div className="space-y-1 relative" ref={stateDropdownRef}>
+              <div className="space-y-1 mt-3 relative" ref={stateDropdownRef}>
                 <input type="hidden" {...register("state")} />
                 <div 
                     onClick={() => setIsStateDropdownOpen(!isStateDropdownOpen)}
@@ -705,7 +705,7 @@ return (
                 </div>
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1 mt-4">
                 <div className="relative">
                   <input type="text" {...register("city")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter your city" onFocus={() => setCityFocused(true)} onBlur={() => setCityFocused(false)} />
                   <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${cityFocused || !!cityValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>City *</span>
@@ -715,7 +715,7 @@ return (
                 </div>
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1 mt-4">
                 <div className="relative">
                   <input 
                     {...register("pincode")} 
@@ -780,7 +780,7 @@ return (
                 </div>
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1 mt-4">
                 <div className="relative">
                   <select {...register("ownershipProof")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white" onFocus={() => setOwnershipFocused(true)} onBlur={() => setOwnershipFocused(false)}>
                     <option value="">Select Ownership Proof</option>
@@ -793,7 +793,7 @@ return (
                 </div>
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1 mt-4">
                 <div className="relative">
                   <select {...register("yearsInBusiness")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white" onFocus={() => setYearsFocused(true)} onBlur={() => setYearsFocused(false)}>
                     <option value="">Select Years</option>
@@ -806,7 +806,7 @@ return (
                 </div>
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1 mt-5">
                 <div className="relative">
                   <select {...register("annualTurnover")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white" onFocus={() => setTurnoverFocused(true)} onBlur={() => setTurnoverFocused(false)}>
                     <option value="">Select Turnover</option>
@@ -845,7 +845,7 @@ return (
         )}
 
         {/* Navigation Buttons */}
-        <div className="pt-3 border-t-2 border-gray-100">
+        <div className="pt-1 border-t-2 border-gray-100">
           {currentStep < totalSteps ? (
             <button
               type="button"
