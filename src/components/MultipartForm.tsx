@@ -153,6 +153,18 @@ const [otpError, setOtpError] = useState("");
 const [otpSentMsg, setOtpSentMsg] = useState("");
 const lastSentMobile = useRef(""); 
 const context = "secured_business_loan"; 
+const [fullNameFocused, setFullNameFocused] = useState(false);
+const [emailFocused, setEmailFocused] = useState(false);
+const [mobileFocused, setMobileFocused] = useState(false);
+const [otpFocused, setOtpFocused] = useState(false);
+const [dobFocused, setDobFocused] = useState(false);
+const [cityFocused, setCityFocused] = useState(false);
+const [pincodeFocused, setPincodeFocused] = useState(false);
+const [loanAmountFocused, setLoanAmountFocused] = useState(false);
+const [constitutionFocused, setConstitutionFocused] = useState(false);
+const [ownershipFocused, setOwnershipFocused] = useState(false);
+const [yearsFocused, setYearsFocused] = useState(false);
+const [turnoverFocused, setTurnoverFocused] = useState(false);
 
 const {
   register,
@@ -174,6 +186,16 @@ const {
 const mobileNumber = watch("mobileNumber");
 const enteredOtp = watch("otp");
 const selectedState = watch("state");
+const fullNameValue = watch("fullName");
+const emailValue = watch("email");
+const dobValue = watch("dateOfBirth");
+const cityValue = watch("city");
+const pincodeValue = watch("pincode");
+const loanAmountValue = watch("loanAmount");
+const constitutionValue = watch("constitution");
+const ownershipValue = watch("ownershipProof");
+const yearsValue = watch("yearsInBusiness");
+const turnoverValue = watch("annualTurnover");
 
 // --- MOUNT EFFECT ---
 useEffect(() => {
@@ -500,16 +522,42 @@ return (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-1">
               
               <div className="space-y-1">
-                <label className="block text-xs font-semibold text-gray-700">Full Name *</label>
-                <input {...register("fullName")} type="text" className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" placeholder="Enter your full name" />
+                <div className="relative">
+                  <input
+                    {...register("fullName")}
+                    type="text"
+                    className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500"
+                    placeholder="Enter Your full name"
+                    onFocus={() => setFullNameFocused(true)}
+                    onBlur={() => setFullNameFocused(false)}
+                  />
+                  <span
+                    className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${fullNameFocused || !!fullNameValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}
+                  >
+                    Full Name *
+                  </span>
+                </div>
                 <div className="h-4">
                   {errors.fullName && <p className="text-xs text-red-500">{errors.fullName.message}</p>}
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="block text-xs font-semibold text-gray-700">Email address *</label>
-                <input {...register("email")} type="email" className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" placeholder="Enter your email" />
+                <div className="relative">
+                  <input
+                    {...register("email")}
+                    type="email"
+                    className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500"
+                    placeholder="Enter your email"
+                    onFocus={() => setEmailFocused(true)}
+                    onBlur={() => setEmailFocused(false)}
+                  />
+                  <span
+                    className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${emailFocused || !!emailValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}
+                  >
+                    Email address *
+                  </span>
+                </div>
                 <div className="h-4">
                   {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
                 </div>
@@ -517,7 +565,6 @@ return (
 
               {/* MOBILE */}
               <div className="space-y-1">
-                <label className="block text-xs font-semibold text-gray-700">Mobile Number *</label>
                 <div className="relative">
                   <input
                     {...register("mobileNumber")}
@@ -527,14 +574,21 @@ return (
                       e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
                       if (e.currentTarget.value.length > 10) e.currentTarget.value = e.currentTarget.value.slice(0, 10);
                     }}
-                    className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary disabled:bg-gray-50"
+                    className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary disabled:bg-gray-50 placeholder-transparent focus:placeholder-gray-500"
                     placeholder="Enter mobile number"
+                    onFocus={() => setMobileFocused(true)}
+                    onBlur={() => setMobileFocused(false)}
                   />
                   {isSendingOtp && (
                       <div className="absolute right-3 top-2.5">
                           <Loader2 className="w-4 h-4 text-primary animate-spin" />
                       </div>
                   )}
+                  <span
+                    className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${mobileFocused || !!mobileNumber ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}
+                  >
+                    Mobile Number *
+                  </span>
                 </div>
                 <div className="h-4">
                   {errors.mobileNumber ? (
@@ -549,7 +603,6 @@ return (
 
               {/* OTP */}
               <div className="space-y-1">
-                <label className="block text-xs font-semibold text-gray-700">OTP *</label>
                 <div className="relative">
                   <input
                     {...register("otp")}
@@ -559,10 +612,17 @@ return (
                     onInput={(e) => {
                       e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
                     }}
-                    className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary disabled:bg-gray-50"
+                    className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary disabled:bg-gray-50 placeholder-transparent focus:placeholder-gray-500"
                     placeholder="Enter 4-digit OTP"
+                    onFocus={() => setOtpFocused(true)}
+                    onBlur={() => setOtpFocused(false)}
                   />
                   {isVerifyingOtp && <div className="absolute right-3 top-2.5"><Loader2 className="w-4 h-4 text-primary animate-spin" /></div>}
+                  <span
+                    className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${otpFocused || !!enteredOtp ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}
+                  >
+                    OTP *
+                  </span>
                 </div>
                 <div className="h-4">
                   {otpError ? (
@@ -577,15 +637,24 @@ return (
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="block text-xs font-semibold text-gray-700">Date of birth *</label>
-                <input 
-                  {...register("dateOfBirth")} 
-                  type="date" 
-                  min={minDate}
-                  max={maxDate}
-                  className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" 
-                />
+              <div className="space-y-2">
+                <div className="relative">
+                  <input 
+                    {...register("dateOfBirth")} 
+                    type="date" 
+                    min={minDate}
+                    max={maxDate}
+                    className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary"
+                    onFocus={() => setDobFocused(true)}
+                    onBlur={() => setDobFocused(false)}
+                  />
+                  <span
+                    className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${dobFocused || !!dobValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-3 text-sm text-gray-700"}`}
+                  >
+                    Date of birth *
+                  </span>
+                  
+                </div>
                 <div className="h-4">
                   {errors.dateOfBirth ? (
                     <p className="text-xs text-red-500">{errors.dateOfBirth.message}</p>
@@ -597,18 +666,20 @@ return (
 
               {/* Custom State Dropdown */}
               <div className="space-y-1 relative" ref={stateDropdownRef}>
-                <label className="block text-xs font-semibold text-gray-700">State *</label>
-                {/* Hidden input to ensure validation works with RHF */}
                 <input type="hidden" {...register("state")} />
-                
                 <div 
                     onClick={() => setIsStateDropdownOpen(!isStateDropdownOpen)}
-                    className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white flex justify-between items-center cursor-pointer"
+                    className="relative w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white flex justify-between items-center cursor-pointer"
                 >
                     <span className={selectedState ? "text-black" : "text-gray-500"}>
                         {selectedState || "Select State"}
                     </span>
                     <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isStateDropdownOpen ? 'rotate-180' : ''}`} />
+                    <span
+                      className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${isStateDropdownOpen || !!selectedState ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}
+                    >
+                      Select State *
+                    </span>
                 </div>
                 
                 {isStateDropdownOpen && (
@@ -635,23 +706,28 @@ return (
               </div>
 
               <div className="space-y-1">
-                <label className="block text-xs font-semibold text-gray-700">City *</label>
-                <input type="text" placeholder="Enter your city" {...register("city")} className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" />
+                <div className="relative">
+                  <input type="text" {...register("city")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter your city" onFocus={() => setCityFocused(true)} onBlur={() => setCityFocused(false)} />
+                  <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${cityFocused || !!cityValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>City *</span>
+                </div>
                 <div className="h-4">
                   {errors.city && <p className="text-xs text-red-500">{errors.city.message}</p>}
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="block text-xs font-semibold text-gray-700">Pincode *</label>
-                <input 
-                  {...register("pincode")} 
-                  type="text" 
-                  maxLength={6}
-                  onInput={(e) => e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '')}
-                  className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" 
-                  placeholder="Enter 6-digit pincode" 
-                />
+                <div className="relative">
+                  <input 
+                    {...register("pincode")} 
+                    type="text" 
+                    maxLength={6}
+                    onInput={(e) => e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '')}
+                    className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" 
+                    placeholder="Enter 6-digit pincode" 
+                    onFocus={() => setPincodeFocused(true)} onBlur={() => setPincodeFocused(false)}
+                  />
+                  <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${pincodeFocused || !!pincodeValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Pincode *</span>
+                </div>
                 <div className="h-4">
                   {errors.pincode && <p className="text-xs text-red-500">{errors.pincode.message}</p>}
                 </div>
@@ -666,82 +742,96 @@ return (
           <div className={`space-y-1 ${isAnimating ? "animate-slideIn" : ""}`}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-1">
               <div className="space-y-1">
-                <label className="block text-xs font-semibold text-gray-700">Loan Amount Required *</label>
-                <input
-                  {...register("loanAmount")}
-                  type="text"
-                  inputMode="numeric"
-                  className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary"
-                  placeholder="Enter loan amount (₹3L - ₹3Cr)"
-                  onInput={(e) => {
-                    const cleaned = e.currentTarget.value.replace(/[^0-9]/g, "");
-                    setValue("loanAmount", cleaned, { shouldValidate: false });
-                  }}
-                  onBlur={(e) => {
-                    const clamped = clampLoanAmount(e.currentTarget.value);
-                    setValue("loanAmount", clamped, { shouldValidate: true });
-                  }}
-                />
+                <div className="relative">
+                  <input
+                    {...register("loanAmount")}
+                    type="text"
+                    inputMode="numeric"
+                    className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500"
+                    placeholder="Enter loan amount (₹3L - ₹3Cr)"
+                    onInput={(e) => {
+                      const cleaned = e.currentTarget.value.replace(/[^0-9]/g, "");
+                      setValue("loanAmount", cleaned, { shouldValidate: false });
+                    }}
+                    onBlur={(e) => {
+                      const clamped = clampLoanAmount(e.currentTarget.value);
+                      setValue("loanAmount", clamped, { shouldValidate: true });
+                      setLoanAmountFocused(false);
+                    }}
+                    onFocus={() => setLoanAmountFocused(true)}
+                  />
+                  <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${loanAmountFocused || !!loanAmountValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Loan Amount Required *</span>
+                </div>
                 <div className="h-4">
                   {errors.loanAmount && <p className="text-xs text-red-500">{errors.loanAmount.message}</p>}
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="block text-xs font-semibold text-gray-700">Select Constitution *</label>
-                <select {...register("constitution")} className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white">
-                  <option value="">Select Constitution</option>
-                  {constitutions.map((c) => <option key={c} value={c}>{c}</option>)}
-                </select>
+                <div className="relative">
+                  <select {...register("constitution")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white" onFocus={() => setConstitutionFocused(true)} onBlur={() => setConstitutionFocused(false)}>
+                    <option value="">Select Constitution</option>
+                    {constitutions.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${constitutionFocused || !!constitutionValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Select Constitution *</span>
+                </div>
                 <div className="h-4">
                   {errors.constitution && <p className="text-xs text-red-500">{errors.constitution.message}</p>}
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="block text-xs font-semibold text-gray-700">Select Ownership Proof *</label>
-                <select {...register("ownershipProof")} className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white">
-                  <option value="">Select Ownership Proof</option>
-                  {ownershipProofs.map((p) => <option key={p} value={p}>{p}</option>)}
-                </select>
+                <div className="relative">
+                  <select {...register("ownershipProof")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white" onFocus={() => setOwnershipFocused(true)} onBlur={() => setOwnershipFocused(false)}>
+                    <option value="">Select Ownership Proof</option>
+                    {ownershipProofs.map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                  <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${ownershipFocused || !!ownershipValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Select Ownership Proof *</span>
+                </div>
                 <div className="h-4">
                   {errors.ownershipProof && <p className="text-xs text-red-500">{errors.ownershipProof.message}</p>}
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="block text-xs font-semibold text-gray-700">Years in Business *</label>
-                <select {...register("yearsInBusiness")} className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white">
-                  <option value="">Select Years</option>
-                  {yearsInBusiness.map((y) => <option key={y} value={y}>{y}</option>)}
-                </select>
+                <div className="relative">
+                  <select {...register("yearsInBusiness")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white" onFocus={() => setYearsFocused(true)} onBlur={() => setYearsFocused(false)}>
+                    <option value="">Select Years</option>
+                    {yearsInBusiness.map((y) => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                  <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${yearsFocused || !!yearsValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Years in Business *</span>
+                </div>
                 <div className="h-4">
                   {errors.yearsInBusiness && <p className="text-xs text-red-500">{errors.yearsInBusiness.message}</p>}
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="block text-xs font-semibold text-gray-700">Annual Turnover *</label>
-                <select {...register("annualTurnover")} className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white">
-                  <option value="">Select Turnover</option>
-                  {annualTurnovers.map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
+                <div className="relative">
+                  <select {...register("annualTurnover")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white" onFocus={() => setTurnoverFocused(true)} onBlur={() => setTurnoverFocused(false)}>
+                    <option value="">Select Turnover</option>
+                    {annualTurnovers.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                  <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${turnoverFocused || !!turnoverValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Annual Turnover *</span>
+                </div>
                 <div className="h-4">
                   {errors.annualTurnover && <p className="text-xs text-red-500">{errors.annualTurnover.message}</p>}
                 </div>
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <label className="block text-xs font-semibold text-gray-700">Is your Business GST registered? *</label>
-                <div className="flex gap-4 h-[38px] items-center">
-                  <label className="flex items-center gap-2 cursor-pointer group">
-                    <input {...register("gstRegistered")} type="radio" value="yes" className="w-4 h-4 text-primary focus:ring-primary" />
-                    <span className="text-sm text-gray-700 font-medium group-hover:text-primary transition-colors">Yes</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer group">
-                    <input {...register("gstRegistered")} type="radio" value="no" className="w-4 h-4 text-primary focus:ring-primary" />
-                    <span className="text-sm text-gray-700 font-medium group-hover:text-primary transition-colors">No</span>
-                  </label>
+                <div className="w-full border-2 border-gray-200 rounded-lg overflow-hidden h-[38px]">
+                  <div className="grid grid-cols-2 h-full">
+                    <label className="flex items-center justify-center gap-2 h-full cursor-pointer border-r border-gray-200">
+                      <input {...register("gstRegistered")} type="radio" value="yes" className="w-4 h-4 text-primary focus:ring-primary" />
+                      <span className="text-sm text-gray-700 font-medium">Yes</span>
+                    </label>
+                    <label className="flex items-center justify-center gap-2 h-full cursor-pointer">
+                      <input {...register("gstRegistered")} type="radio" value="no" className="w-4 h-4 text-primary focus:ring-primary" />
+                      <span className="text-sm text-gray-700 font-medium">No</span>
+                    </label>
+                  </div>
                 </div>
                 <div className="h-4">
                   {errors.gstRegistered && <p className="text-xs text-red-500">{errors.gstRegistered.message}</p>}
