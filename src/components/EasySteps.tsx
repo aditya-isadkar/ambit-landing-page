@@ -10,19 +10,16 @@ export default function EasySteps() {
       icon: FileText,
       title: "Fill Application",
       description: "Complete our simple online form with your business details",
-      number: "01",
     },
     {
       icon: CheckCircle,
       title: "Get Approved",
       description: "Our team reviews your application and approves within 24 hours",
-      number: "02",
     },
     {
       icon: Clock,
       title: "Receive Funds",
       description: "Get your loan amount directly transferred to your account",
-      number: "03",
     },
   ];
 
@@ -48,13 +45,6 @@ export default function EasySteps() {
               return (
                 <ScrollAnimation key={index} direction="up" delay={index * 0.1}>
                   <div className="relative h-full flex flex-col">
-                    {/* Step Number Badge */}
-                    <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-20 md:left-0 md:transform-none">
-                      <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center shadow-md border-2 border-white">
-                        <span className="text-white font-bold text-xs">{step.number}</span>
-                      </div>
-                    </div>
-                    
                     {/* Content Card */}
                     <div className="pt-6 bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-primary transition-all duration-300 h-full flex flex-col">
                       <div className="flex flex-col items-center text-center flex-1">

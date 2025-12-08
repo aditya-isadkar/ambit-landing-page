@@ -6,7 +6,7 @@ import ScrollAnimation from "./ScrollAnimation";
 
 export default function ReadyToGrow() {
   return (
-    <section className="py-20 bg-gradient-to-br from-primary via-secondary-burgundy to-secondary-burgundy text-white relative overflow-hidden">
+    <section className="py-20 bg-gradient-to-br from-[#e71c23] via-[#e71c23] to-[#af1d30] text-white relative overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute inset-0" style={{

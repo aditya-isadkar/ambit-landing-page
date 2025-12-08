@@ -72,7 +72,7 @@ const rawStates = [
 ];
 const states = rawStates.sort();
 
-const constitutions = ["Private Limited", "LLP", "Partnership", "Sole Proprietorship"];
+const constitutions = ["Private Limited", "Limited Liability Partnership", "Partnership", "Sole Proprietorship"];
 const ownershipProofs = ["Property Papers", "Rent Agreement", "Lease Agreement"];
 const yearsInBusiness = ["1-2 years", "3-5 years", "5-10 years", "10+ years"];
 const annualTurnovers = ["< 10 Lakhs", "10-50 Lakhs", "50 Lakhs - 1 Cr", "1-5 Cr", "5+ Cr"];
@@ -134,6 +134,7 @@ export default function MultipartForm() {
 const [currentStep, setCurrentStep] = useState(1);
 const [isAnimating, setIsAnimating] = useState(false);
 const totalSteps = 2;
+const [loanAmountWarning, setLoanAmountWarning] = useState("");
 
 // Modal State
 const [showTermsModal, setShowTermsModal] = useState(false);
@@ -325,9 +326,7 @@ const nextStep = async () => {
     "dateOfBirth", 
     "state", 
     "city", 
-    "pincode", 
-    "termsAgreed", 
-    "communicationsAgreed"
+    "pincode"
   ];
   
   if (currentStep === 1) {
@@ -354,6 +353,13 @@ const onSubmit = (data: FormData) => {
   }
   console.log("Form submitted:", data);
   alert("Application submitted successfully!");
+};
+
+const clampLoanAmount = (value: string) => {
+  const numeric = Number(value.replace(/[^0-9]/g, ""));
+  if (!numeric) return "";
+  const clamped = Math.min(Math.max(numeric, 300000), 30000000);
+  return clamped.toString();
 };
 
 // Calculate Date Limits for Input (18 - 60 years)
@@ -651,9 +657,6 @@ return (
                   {errors.pincode && <p className="text-xs text-red-500">{errors.pincode.message}</p>}
                 </div>
               </div>
-
-              {/* Added Consent Section to Step 1 */}
-              <ConsentSection />
               
             </div>
           </div>
@@ -665,9 +668,39 @@ return (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-1">
               <div className="space-y-1">
                 <label className="block text-xs font-semibold text-gray-700">Loan Amount Required *</label>
-                <input {...register("loanAmount")} type="text" className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary" placeholder="Enter loan amount" />
+                <input
+                  {...register("loanAmount")}
+                  type="text"
+                  inputMode="numeric"
+                  className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary"
+                  placeholder="Enter loan amount (₹3L - ₹3Cr)"
+                  onInput={(e) => {
+                    const cleaned = e.currentTarget.value.replace(/[^0-9]/g, "");
+                    const numeric = Number(cleaned);
+                    if (numeric > 30000000) {
+                      setValue("loanAmount", "30000000", { shouldValidate: false });
+                      setLoanAmountWarning("Maximum allowed amount is ₹3,00,00,000");
+                    } else {
+                      setLoanAmountWarning("");
+                      setValue("loanAmount", cleaned, { shouldValidate: false });
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const clamped = clampLoanAmount(e.currentTarget.value);
+                    setValue("loanAmount", clamped, { shouldValidate: true });
+                    if (Number(clamped) >= 30000000) {
+                      setLoanAmountWarning("Maximum allowed amount is ₹3,00,00,000");
+                    } else {
+                      setLoanAmountWarning("");
+                    }
+                  }}
+                />
                 <div className="h-4">
-                  {errors.loanAmount && <p className="text-xs text-red-500">{errors.loanAmount.message}</p>}
+                  {loanAmountWarning ? (
+                    <p className="text-xs text-red-500">{loanAmountWarning}</p>
+                  ) : (
+                    errors.loanAmount && <p className="text-xs text-red-500">{errors.loanAmount.message}</p>
+                  )}
                 </div>
               </div>
 
@@ -717,14 +750,14 @@ return (
 
               <div className="space-y-1">
                 <label className="block text-xs font-semibold text-gray-700">Is your Business GST registered? *</label>
-                <div className="flex gap-4 h-[38px] items-center">
-                  <label className="flex items-center gap-2 cursor-pointer group">
+                <div className="inline-flex rounded-md border border-gray-300 overflow-hidden h-11">
+                  <label className="flex items-center gap-2 px-4 cursor-pointer border-r border-gray-300 hover:bg-gray-50">
                     <input {...register("gstRegistered")} type="radio" value="yes" className="w-4 h-4 text-primary focus:ring-primary" />
-                    <span className="text-sm text-gray-700 font-medium group-hover:text-primary transition-colors">Yes</span>
+                    <span className="text-sm text-gray-700 font-medium">Yes</span>
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer group">
+                  <label className="flex items-center gap-2 px-4 cursor-pointer hover:bg-gray-50">
                     <input {...register("gstRegistered")} type="radio" value="no" className="w-4 h-4 text-primary focus:ring-primary" />
-                    <span className="text-sm text-gray-700 font-medium group-hover:text-primary transition-colors">No</span>
+                    <span className="text-sm text-gray-700 font-medium">No</span>
                   </label>
                 </div>
                 <div className="h-4">

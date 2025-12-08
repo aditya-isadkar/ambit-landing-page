@@ -6,9 +6,13 @@ import Link from "next/link";
 import ScrollAnimation from "./ScrollAnimation";
 
 export default function EMICalculator() {
-  const [loanAmount, setLoanAmount] = useState(1000000); // Stores actual amount (e.g., 1000000)
+  const [loanAmount, setLoanAmount] = useState(300000); // Stores actual amount (e.g., 300000 = ₹3 Lakhs)
   const [interestRate, setInterestRate] = useState(11.99);
   const [tenure, setTenure] = useState(12);
+
+  // Ensure consistent formatting on server/client to avoid hydration mismatches
+  const formatCurrency = (value: number) =>
+    value.toLocaleString("en-IN");
 
   const calculateEMI = () => {
     const monthlyRate = interestRate / 12 / 100;
@@ -23,7 +27,7 @@ export default function EMICalculator() {
 
   // Handlers to enforce limits when user finishes typing (onBlur)
   const handleLoanBlur = () => {
-    if (loanAmount < 100000) setLoanAmount(100000);       // Min 1 Lakh
+    if (loanAmount < 300000) setLoanAmount(300000);       // Min 3 Lakhs
     if (loanAmount > 30000000) setLoanAmount(30000000);   // Max 3 Cr
   };
 
@@ -38,7 +42,7 @@ export default function EMICalculator() {
   };
 
   return (
-    <section className="py-20 bg-gradient-to-br from-secondary-burgundy to-primary text-white">
+    <section className="py-20 bg-gradient-to-br from-[#e71c23] to-[#af1d30] text-white">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Left Side - Content */}
@@ -79,18 +83,18 @@ export default function EMICalculator() {
                   </label>
                   <input
                     type="range"
-                    min="100000"
+                    min="300000"
                     max="30000000"
                     step="100000"
                     value={loanAmount}
                     onChange={(e) => setLoanAmount(Number(e.target.value))}
                     className="w-full h-2 rounded-lg appearance-none cursor-pointer"
                     style={{
-                      background: `linear-gradient(to right, #f30402 0%, #f30402 ${((loanAmount - 100000) / (30000000 - 100000)) * 100}%, #4b5563 ${((loanAmount - 100000) / (30000000 - 100000)) * 100}%, #4b5563 100%)`
+                      background: `linear-gradient(to right, #e71c23 0%, #e71c23 ${((loanAmount - 300000) / (30000000 - 300000)) * 100}%, #4b5563 ${((loanAmount - 300000) / (30000000 - 300000)) * 100}%, #4b5563 100%)`
                     }}
                   />
                   <div className="flex justify-between items-center mt-2">
-                    <span className="text-sm text-white/60">₹1 Lakh</span>
+                    <span className="text-sm text-white/60">₹3 Lakhs</span>
                     {/* Editable Input for Loan Amount in Lakhs */}
                     <div className="flex items-center justify-center">
                       <span className="text-lg font-bold text-white mr-1">₹</span>
@@ -122,7 +126,7 @@ export default function EMICalculator() {
                     onChange={(e) => setInterestRate(Number(e.target.value))}
                     className="w-full h-2 rounded-lg appearance-none cursor-pointer"
                     style={{
-                      background: `linear-gradient(to right, #f30402 0%, #f30402 ${((interestRate - 8) / (20 - 8)) * 100}%, #4b5563 ${((interestRate - 8) / (20 - 8)) * 100}%, #4b5563 100%)`
+                      background: `linear-gradient(to right, #e71c23 0%, #e71c23 ${((interestRate - 8) / (20 - 8)) * 100}%, #4b5563 ${((interestRate - 8) / (20 - 8)) * 100}%, #4b5563 100%)`
                     }}
                   />
                   <div className="flex justify-between items-center mt-2">
@@ -159,7 +163,7 @@ export default function EMICalculator() {
                     onChange={(e) => setTenure(Number(e.target.value))}
                     className="w-full h-2 rounded-lg appearance-none cursor-pointer"
                     style={{
-                      background: `linear-gradient(to right, #f30402 0%, #f30402 ${((tenure - 6) / (60 - 6)) * 100}%, #4b5563 ${((tenure - 6) / (60 - 6)) * 100}%, #4b5563 100%)`
+                      background: `linear-gradient(to right, #e71c23 0%, #e71c23 ${((tenure - 6) / (60 - 6)) * 100}%, #4b5563 ${((tenure - 6) / (60 - 6)) * 100}%, #4b5563 100%)`
                     }}
                   />
                   <div className="flex justify-between items-center mt-2">
@@ -186,16 +190,16 @@ export default function EMICalculator() {
                   <div className="flex justify-between items-center">
                     <span className="text-white/80">Monthly EMI</span>
                     <span className="text-3xl font-bold text-secondary-orange">
-                      ₹{calculateEMI().toLocaleString()}
+                      ₹{formatCurrency(calculateEMI())}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-white/60">Total Interest</span>
-                    <span className="text-white/80">₹{totalInterest.toLocaleString()}</span>
+                    <span className="text-white/80">₹{formatCurrency(totalInterest)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-white/60">Total Amount</span>
-                    <span className="text-white/80">₹{totalAmount.toLocaleString()}</span>
+                    <span className="text-white/80">₹{formatCurrency(totalAmount)}</span>
                   </div>
                 </div>
               </div>

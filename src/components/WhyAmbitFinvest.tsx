@@ -15,7 +15,7 @@ export default function WhyAmbitFinvest() {
       icon: Home,
       title: "High loan on your property",
       description: "Loan up to 70% of asset value",
-      color: "from-secondary-orange to-primary",
+      color: "from-primary to-secondary-burgundy",
     },
     {
       icon: Percent,
