@@ -134,7 +134,6 @@ export default function MultipartForm() {
 const [currentStep, setCurrentStep] = useState(1);
 const [isAnimating, setIsAnimating] = useState(false);
 const totalSteps = 2;
-const [loanAmountWarning, setLoanAmountWarning] = useState("");
 
 // Modal State
 const [showTermsModal, setShowTermsModal] = useState(false);
@@ -676,31 +675,15 @@ return (
                   placeholder="Enter loan amount (₹3L - ₹3Cr)"
                   onInput={(e) => {
                     const cleaned = e.currentTarget.value.replace(/[^0-9]/g, "");
-                    const numeric = Number(cleaned);
-                    if (numeric > 30000000) {
-                      setValue("loanAmount", "30000000", { shouldValidate: false });
-                      setLoanAmountWarning("Maximum allowed amount is ₹3,00,00,000");
-                    } else {
-                      setLoanAmountWarning("");
-                      setValue("loanAmount", cleaned, { shouldValidate: false });
-                    }
+                    setValue("loanAmount", cleaned, { shouldValidate: false });
                   }}
                   onBlur={(e) => {
                     const clamped = clampLoanAmount(e.currentTarget.value);
                     setValue("loanAmount", clamped, { shouldValidate: true });
-                    if (Number(clamped) >= 30000000) {
-                      setLoanAmountWarning("Maximum allowed amount is ₹3,00,00,000");
-                    } else {
-                      setLoanAmountWarning("");
-                    }
                   }}
                 />
                 <div className="h-4">
-                  {loanAmountWarning ? (
-                    <p className="text-xs text-red-500">{loanAmountWarning}</p>
-                  ) : (
-                    errors.loanAmount && <p className="text-xs text-red-500">{errors.loanAmount.message}</p>
-                  )}
+                  {errors.loanAmount && <p className="text-xs text-red-500">{errors.loanAmount.message}</p>}
                 </div>
               </div>
 
@@ -750,14 +733,14 @@ return (
 
               <div className="space-y-1">
                 <label className="block text-xs font-semibold text-gray-700">Is your Business GST registered? *</label>
-                <div className="inline-flex rounded-md border border-gray-300 overflow-hidden h-11">
-                  <label className="flex items-center gap-2 px-4 cursor-pointer border-r border-gray-300 hover:bg-gray-50">
+                <div className="flex gap-4 h-[38px] items-center">
+                  <label className="flex items-center gap-2 cursor-pointer group">
                     <input {...register("gstRegistered")} type="radio" value="yes" className="w-4 h-4 text-primary focus:ring-primary" />
-                    <span className="text-sm text-gray-700 font-medium">Yes</span>
+                    <span className="text-sm text-gray-700 font-medium group-hover:text-primary transition-colors">Yes</span>
                   </label>
-                  <label className="flex items-center gap-2 px-4 cursor-pointer hover:bg-gray-50">
+                  <label className="flex items-center gap-2 cursor-pointer group">
                     <input {...register("gstRegistered")} type="radio" value="no" className="w-4 h-4 text-primary focus:ring-primary" />
-                    <span className="text-sm text-gray-700 font-medium">No</span>
+                    <span className="text-sm text-gray-700 font-medium group-hover:text-primary transition-colors">No</span>
                   </label>
                 </div>
                 <div className="h-4">

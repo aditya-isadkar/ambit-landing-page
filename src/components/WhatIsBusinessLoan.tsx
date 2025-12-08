@@ -42,7 +42,7 @@ export default function WhatIsBusinessLoan() {
             {/* Right Side - Visual Element */}
             <ScrollAnimation direction="left" delay={0.2}>
               <div className="relative">
-                <div className="relative bg-gradient-to-br from-[#e71c23] to-[#af1d30] rounded-3xl p-12 text-white transform rotate-3 hover:rotate-0 transition-transform duration-500">
+                <div className="relative bg-gradient-to-br from-primary to-secondary-burgundy rounded-3xl p-12 text-white transform rotate-3 hover:rotate-0 transition-transform duration-500">
                   <div className="absolute -top-4 -right-4 w-24 h-24 bg-secondary-orange rounded-full opacity-20 blur-2xl"></div>
                   <div className="relative z-10">
                     <div className="text-6xl font-bold mb-4">₹3Cr</div>
