@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { createPortal } from "react-dom"; // IMPORTED
+import { createPortal } from "react-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -35,40 +35,7 @@ I/We hereby agree that the rate of interest is in accordance with Interest Rate 
 
 // List sorted alphabetically
 const rawStates = [
-"Andaman and Nicobar Island",
-"Andhra Pradesh",
-"Arunachal Pradesh",
-"Assam",
-"Bihar",
-"Chandigarh",
-"Chhattisgarh",
-"Daman and Diu",
-"Delhi NCR",
-"Goa",
-"Gujarat",
-"Haryana",
-"Himachal Pradesh",
-"Jharkhand",
-"Karnataka",
-"Kerala",
-"Lakshadweep",
-"Madhya Pradesh",
-"Maharashtra",
-"Manipur",
-"Meghalaya",
-"Mizoram",
-"Nagaland",
-"Odisha",
-"Puducherry",
-"Punjab",
-"Rajasthan",
-"Sikkim",
-"Tamilnadu",
-"Telangana",
-"Tripura",
-"Uttar Pradesh",
-"Uttrakhand",
-"West Bengal"
+"Andaman and Nicobar Island", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chandigarh", "Chhattisgarh", "Daman and Diu", "Delhi NCR", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Lakshadweep", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Puducherry", "Punjab", "Rajasthan", "Sikkim", "Tamilnadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttrakhand", "West Bengal"
 ];
 const states = rawStates.sort();
 
@@ -80,791 +47,618 @@ const annualTurnovers = ["< 10 Lakhs", "10-50 Lakhs", "50 Lakhs - 1 Cr", "1-5 Cr
 const stepIcons = [User, Briefcase];
 const stepTitles = ["Personal Details", "Business Details"];
 
-// Helper function to calculate age
+// --- HELPER FUNCTION FOR DYNAMIC AGE ---
 const calculateAge = (dateString: string) => {
-const today = new Date();
-const birthDate = new Date(dateString);
-let age = today.getFullYear() - birthDate.getFullYear();
-const m = today.getMonth() - birthDate.getMonth();
-if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-  age--;
-}
-return age;
+  if (!dateString) return 0;
+  const today = new Date();
+  const birthDate = new Date(dateString);
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
 };
 
 // --- SCHEMA CONFIGURATION ---
 const formSchema = z.object({
-// Step 1: Personal Information
-fullName: z.string().min(2, "Full Name is required"),
-email: z.string().email("Invalid email address"),
-mobileNumber: z.string().length(10, "Mobile number must be exactly 10 digits"),
-otp: z.string().min(4, "OTP is required"),
+  // Step 1: Personal Information
+  fullName: z.string().min(2, "Full Name is required"),
+  email: z.string().email("Invalid email address"),
+  mobileNumber: z.string().length(10, "Mobile number must be exactly 10 digits"),
+  otp: z.string().min(4, "OTP is required"),
 
-// Date validation: 21 to 60 years old
-dateOfBirth: z.string().refine((val) => {
-  const age = calculateAge(val);
-  return age >= 21 && age <= 60;
-}, { message: "You must be between 21 and 60 years old" }),
+  // Date validation: DYNAMIC 21-60 years check
+  dateOfBirth: z.string().refine((val) => {
+    const age = calculateAge(val);
+    return age >= 21 && age <= 60;
+  }, { message: "Age must be between 21 and 60 years" }),
 
-state: z.string().min(1, "State is required"),
-city: z.string().min(1, "City is required"),
-// Pincode strict 6 digits
-pincode: z.string().length(6, "Pincode must be exactly 6 digits"),
+  state: z.string().min(1, "State is required"),
+  city: z.string().min(1, "City is required"),
+  pincode: z.string().length(6, "Pincode must be exactly 6 digits"),
 
-// Step 2: Business Information
-loanAmount: z.string().min(1, "Loan amount is required"),
-constitution: z.string().min(1, "Constitution is required"),
-ownershipProof: z.string().min(1, "Ownership proof is required"),
-yearsInBusiness: z.string().min(1, "Years in business is required"),
-annualTurnover: z.string().min(1, "Annual turnover is required"),
-gstRegistered: z.enum(["yes", "no"], { message: "Please select an option" }),
+  // Step 2: Business Information
+  loanAmount: z.string().min(1, "Loan amount is required"),
+  constitution: z.string().min(1, "Constitution is required"),
+  ownershipProof: z.string().min(1, "Ownership proof is required"),
+  yearsInBusiness: z.string().min(1, "Years in business is required"),
+  annualTurnover: z.string().min(1, "Annual turnover is required"),
+  gstRegistered: z.enum(["yes", "no"], { message: "Please select an option" }),
 
-// Consent Checkboxes
-termsAgreed: z.boolean().refine((val) => val === true, {
-  message: "You must agree to the Terms and Conditions",
-}),
-communicationsAgreed: z.boolean().refine((val) => val === true, {
-  message: "You must authorize communications",
-}),
+  // Consent Checkboxes
+  termsAgreed: z.boolean().refine((val) => val === true, {
+    message: "You must agree to the Terms and Conditions",
+  }),
+  communicationsAgreed: z.boolean().refine((val) => val === true, {
+    message: "You must authorize communications",
+  }),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
 export default function MultipartForm() {
-const [currentStep, setCurrentStep] = useState(1);
-const [isAnimating, setIsAnimating] = useState(false);
-const totalSteps = 2;
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const totalSteps = 2;
 
-// Modal State
-const [showTermsModal, setShowTermsModal] = useState(false);
-const [mounted, setMounted] = useState(false); // NEW STATE FOR PORTAL
+  // Modal State
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-// State Dropdown State
-const [isStateDropdownOpen, setIsStateDropdownOpen] = useState(false);
-const stateDropdownRef = useRef<HTMLDivElement>(null);
+  // State Dropdown State
+  const [isStateDropdownOpen, setIsStateDropdownOpen] = useState(false);
+  const stateDropdownRef = useRef<HTMLDivElement>(null);
 
-// OTP STATE CONFIGURATION
-const [otpToken, setOtpToken] = useState<string | null>(null);
-const [otpCountdown, setOtpCountdown] = useState(0);
-const [isSendingOtp, setIsSendingOtp] = useState(false);
-const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
-const [isMobileVerified, setIsMobileVerified] = useState(false);
-const [otpError, setOtpError] = useState(""); 
-const [otpSentMsg, setOtpSentMsg] = useState("");
-const lastSentMobile = useRef(""); 
-const context = "secured_business_loan"; 
-const [fullNameFocused, setFullNameFocused] = useState(false);
-const [emailFocused, setEmailFocused] = useState(false);
-const [mobileFocused, setMobileFocused] = useState(false);
-const [otpFocused, setOtpFocused] = useState(false);
-const [dobFocused, setDobFocused] = useState(false);
-const [cityFocused, setCityFocused] = useState(false);
-const [pincodeFocused, setPincodeFocused] = useState(false);
-const [loanAmountFocused, setLoanAmountFocused] = useState(false);
-const [constitutionFocused, setConstitutionFocused] = useState(false);
-const [ownershipFocused, setOwnershipFocused] = useState(false);
-const [yearsFocused, setYearsFocused] = useState(false);
-const [turnoverFocused, setTurnoverFocused] = useState(false);
+  // OTP STATE CONFIGURATION
+  const [otpToken, setOtpToken] = useState<string | null>(null);
+  const [otpCountdown, setOtpCountdown] = useState(0);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [isMobileVerified, setIsMobileVerified] = useState(false);
+  const [otpError, setOtpError] = useState(""); 
+  const [otpSentMsg, setOtpSentMsg] = useState("");
+  const lastSentMobile = useRef(""); 
+  const context = "secured_business_loan"; 
+  
+  // Focus States
+  const [fullNameFocused, setFullNameFocused] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [mobileFocused, setMobileFocused] = useState(false);
+  const [otpFocused, setOtpFocused] = useState(false);
+  const [dobFocused, setDobFocused] = useState(false);
+  const [cityFocused, setCityFocused] = useState(false);
+  const [pincodeFocused, setPincodeFocused] = useState(false);
+  const [loanAmountFocused, setLoanAmountFocused] = useState(false);
+  const [constitutionFocused, setConstitutionFocused] = useState(false);
+  const [ownershipFocused, setOwnershipFocused] = useState(false);
+  const [yearsFocused, setYearsFocused] = useState(false);
+  const [turnoverFocused, setTurnoverFocused] = useState(false);
 
-const {
-  register,
-  handleSubmit,
-  formState: { errors },
-  watch,
-  setValue,
-  trigger,
-} = useForm<FormData>({
-  resolver: zodResolver(formSchema),
-  mode: "onSubmit", // Validation only triggers on submit or manual trigger
-  reValidateMode: "onChange", 
-  defaultValues: {
-    termsAgreed: true,
-    communicationsAgreed: true
-  }
-});
-
-const mobileNumber = watch("mobileNumber");
-const enteredOtp = watch("otp");
-const selectedState = watch("state");
-const fullNameValue = watch("fullName");
-const emailValue = watch("email");
-const dobValue = watch("dateOfBirth");
-const cityValue = watch("city");
-const pincodeValue = watch("pincode");
-const loanAmountValue = watch("loanAmount");
-const constitutionValue = watch("constitution");
-const ownershipValue = watch("ownershipProof");
-const yearsValue = watch("yearsInBusiness");
-const turnoverValue = watch("annualTurnover");
-
-// --- MOUNT EFFECT ---
-useEffect(() => {
-    setMounted(true);
-}, []);
-
-// --- SCROLL LOCK EFFECT ---
-// This prevents background scrolling when modal is open
-useEffect(() => {
-    if (showTermsModal) {
-        document.body.style.overflow = "hidden";
-    } else {
-        document.body.style.overflow = "unset";
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    watch,
+    setValue,
+    trigger,
+  } = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    mode: "onSubmit",
+    reValidateMode: "onChange", 
+    defaultValues: {
+      termsAgreed: true,
+      communicationsAgreed: true
     }
-    // Cleanup
-    return () => {
-        document.body.style.overflow = "unset";
-    };
-}, [showTermsModal]);
+  });
 
-useEffect(() => {
-  setIsAnimating(true);
-  const timer = setTimeout(() => setIsAnimating(false), 500);
-  return () => clearTimeout(timer);
-}, [currentStep]);
+  const mobileNumber = watch("mobileNumber");
+  const enteredOtp = watch("otp");
+  const selectedState = watch("state");
+  const fullNameValue = watch("fullName");
+  const emailValue = watch("email");
+  const dobValue = watch("dateOfBirth");
+  const cityValue = watch("city");
+  const pincodeValue = watch("pincode");
+  const loanAmountValue = watch("loanAmount");
+  const constitutionValue = watch("constitution");
+  const ownershipValue = watch("ownershipProof");
+  const yearsValue = watch("yearsInBusiness");
+  const turnoverValue = watch("annualTurnover");
 
-// Close dropdown when clicking outside
-useEffect(() => {
-  function handleClickOutside(event: MouseEvent) {
-    if (stateDropdownRef.current && !stateDropdownRef.current.contains(event.target as Node)) {
-      setIsStateDropdownOpen(false);
-    }
-  }
-  document.addEventListener("mousedown", handleClickOutside);
-  return () => document.removeEventListener("mousedown", handleClickOutside);
-}, []);
+  // --- MOUNT EFFECT ---
+  useEffect(() => {
+      setMounted(true);
+  }, []);
 
-// Countdown Timer Effect
-useEffect(() => {
-  if (otpCountdown <= 0) return;
-  const timer = setTimeout(() => setOtpCountdown((prev) => prev - 1), 1000);
-  return () => clearTimeout(timer);
-}, [otpCountdown]);
+  // --- SCROLL LOCK EFFECT ---
+  useEffect(() => {
+      if (showTermsModal) {
+          document.body.style.overflow = "hidden";
+      } else {
+          document.body.style.overflow = "unset";
+      }
+      return () => { document.body.style.overflow = "unset"; };
+  }, [showTermsModal]);
 
-useEffect(() => {
-  if (mobileNumber && mobileNumber.length !== 10) {
-      setIsMobileVerified(false);
-      setOtpToken(null);
-      setOtpError("");
-      setOtpSentMsg("");
-      lastSentMobile.current = "";
-  }
-}, [mobileNumber]);
-
-useEffect(() => {
-  const cleanMobile = mobileNumber?.replace(/\D/g, "");
-  if (
-    cleanMobile?.length === 10 && 
-    !isMobileVerified && 
-    !isSendingOtp && 
-    !otpToken && 
-    lastSentMobile.current !== cleanMobile
-  ) {
-    const timer = setTimeout(() => {
-      handleRequestOtp(cleanMobile);
-    }, 500);
+  useEffect(() => {
+    setIsAnimating(true);
+    const timer = setTimeout(() => setIsAnimating(false), 500);
     return () => clearTimeout(timer);
-  }
-}, [mobileNumber]);
+  }, [currentStep]);
 
-useEffect(() => {
-  if (enteredOtp && enteredOtp.length === 4 && otpToken && !isMobileVerified && !isVerifyingOtp) {
-    handleVerifyOtp();
-  }
-}, [enteredOtp]);
-
-const handleRequestOtp = async (mobileToUse?: string) => {
-  const mobile = mobileToUse || mobileNumber;
-  setOtpError("");
-  setOtpSentMsg("");
-
-  if (!mobile || !/^\d{10}$/.test(mobile)) return;
-
-  setIsSendingOtp(true);
-  try {
-    const response = await fetch("/api/otp/request", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mobile: mobile, context }),
-    });
-
-    if (!response.ok) throw new Error("Failed to send OTP");
-
-    const payload = await response.json();
-    setOtpToken(payload.token);
-    setOtpCountdown(payload.cooldown ?? 60);
-    setOtpSentMsg("OTP sent successfully");
-    lastSentMobile.current = mobile; 
-  } catch (error) {
-    console.error(error);
-    setOtpError("Error sending OTP");
-  } finally {
-    setIsSendingOtp(false);
-  }
-};
-
-const handleVerifyOtp = async () => {
-  if (!otpToken || !enteredOtp) return;
-  setOtpError("");
-
-  setIsVerifyingOtp(true);
-  try {
-    const response = await fetch("/api/otp/verify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        token: otpToken,
-        otp: enteredOtp,
-        mobile: mobileNumber,
-        context,
-      }),
-    });
-
-    const payload = await response.json();
-
-    if (response.ok && payload.verified) {
-      setIsMobileVerified(true);
-      setOtpSentMsg(""); 
-    } else {
-      if (enteredOtp.length >= 4) {
-          setOtpError("Invalid OTP");
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (stateDropdownRef.current && !stateDropdownRef.current.contains(event.target as Node)) {
+        setIsStateDropdownOpen(false);
       }
     }
-  } catch (error) {
-    console.error(error);
-    setOtpError("Verification failed");
-  } finally {
-    setIsVerifyingOtp(false);
-  }
-};
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
-const nextStep = async () => {
-  // Define strict list of fields for Step 1
-  const step1Fields: (keyof FormData)[] = [
-    "fullName", 
-    "email", 
-    "mobileNumber", 
-    "otp", 
-    "dateOfBirth", 
-    "state", 
-    "city", 
-    "pincode"
-  ];
-  
-  if (currentStep === 1) {
+  // Countdown Timer Effect
+  useEffect(() => {
+    if (otpCountdown <= 0) return;
+    const timer = setTimeout(() => setOtpCountdown((prev) => prev - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [otpCountdown]);
+
+  useEffect(() => {
+    if (mobileNumber && mobileNumber.length !== 10) {
+        setIsMobileVerified(false);
+        setOtpToken(null);
+        setOtpError("");
+        setOtpSentMsg("");
+        lastSentMobile.current = "";
+    }
+  }, [mobileNumber]);
+
+  useEffect(() => {
+    const cleanMobile = mobileNumber?.replace(/\D/g, "");
+    if (
+      cleanMobile?.length === 10 && 
+      !isMobileVerified && 
+      !isSendingOtp && 
+      !otpToken && 
+      lastSentMobile.current !== cleanMobile
+    ) {
+      const timer = setTimeout(() => {
+        handleRequestOtp(cleanMobile);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [mobileNumber]);
+
+  useEffect(() => {
+    if (enteredOtp && enteredOtp.length === 4 && otpToken && !isMobileVerified && !isVerifyingOtp) {
+      handleVerifyOtp();
+    }
+  }, [enteredOtp]);
+
+  const handleRequestOtp = async (mobileToUse?: string) => {
+    const mobile = mobileToUse || mobileNumber;
+    setOtpError("");
+    setOtpSentMsg("");
+
+    if (!mobile || !/^\d{10}$/.test(mobile)) return;
+
+    setIsSendingOtp(true);
+    try {
+      const response = await fetch("/api/otp/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mobile: mobile, context }),
+      });
+
+      if (!response.ok) throw new Error("Failed to send OTP");
+
+      const payload = await response.json();
+      setOtpToken(payload.token);
+      setOtpCountdown(payload.cooldown ?? 60);
+      setOtpSentMsg("OTP sent successfully");
+      lastSentMobile.current = mobile; 
+    } catch (error) {
+      console.error(error);
+      setOtpError("Error sending OTP");
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otpToken || !enteredOtp) return;
+    setOtpError("");
+
+    setIsVerifyingOtp(true);
+    try {
+      const response = await fetch("/api/otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: otpToken,
+          otp: enteredOtp,
+          mobile: mobileNumber,
+          context,
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (response.ok && payload.verified) {
+        setIsMobileVerified(true);
+        setOtpSentMsg(""); 
+      } else {
+        if (enteredOtp.length >= 4) {
+            setOtpError("Invalid OTP");
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      setOtpError("Verification failed");
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
+  const nextStep = async () => {
+    const step1Fields: (keyof FormData)[] = ["fullName", "email", "mobileNumber", "otp", "dateOfBirth", "state", "city", "pincode"];
+    
+    if (currentStep === 1) {
+      if (!isMobileVerified) {
+        alert("Please verify your mobile number with OTP to proceed.");
+        await trigger(step1Fields); 
+        return;
+      }
+      const isValid = await trigger(step1Fields);
+      if (isValid) {
+        setCurrentStep(currentStep + 1);
+      }
+    }
+  };
+
+  const onSubmit = (data: FormData) => {
     if (!isMobileVerified) {
-      alert("Please verify your mobile number with OTP to proceed.");
-      await trigger(step1Fields); 
+      alert("Mobile number verification is required.");
       return;
     }
+    console.log("Form submitted:", data);
+    alert("Application submitted successfully!");
+  };
 
-    // Explicitly trigger validation ONLY for Step 1 fields
-    // This ensures Step 2 errors are NOT triggered
-    const isValid = await trigger(step1Fields);
-    
-    if (isValid) {
-      setCurrentStep(currentStep + 1);
-    }
-  }
-};
+  const clampLoanAmount = (value: string) => {
+    const numeric = Number(value.replace(/[^0-9]/g, ""));
+    if (!numeric) return "";
+    const clamped = Math.min(Math.max(numeric, 300000), 30000000);
+    return clamped.toString();
+  };
 
-const onSubmit = (data: FormData) => {
-  if (!isMobileVerified) {
-    alert("Mobile number verification is required.");
-    return;
-  }
-  console.log("Form submitted:", data);
-  alert("Application submitted successfully!");
-};
-
-const clampLoanAmount = (value: string) => {
-  const numeric = Number(value.replace(/[^0-9]/g, ""));
-  if (!numeric) return "";
-  const clamped = Math.min(Math.max(numeric, 300000), 30000000);
-  return clamped.toString();
-};
-
-// Calculate Date Limits for Input (18 - 60 years)
-const today = new Date();
-const maxDate = new Date(today.getFullYear() - 21, today.getMonth(), today.getDate()).toISOString().split("T")[0];
-const minDate = new Date(today.getFullYear() - 60, today.getMonth(), today.getDate()).toISOString().split("T")[0];
-
-// Reusable Consent Section Component
-const ConsentSection = () => (
-    <div className="md:col-span-2 space-y-2 mt-2">
-        <div className="flex items-start gap-2">
-            <input 
-                id="termsAgreed"
-                type="checkbox" 
-                {...register("termsAgreed")} 
-                className="mt-1 w-4 h-4 shrink-0 text-primary rounded border-gray-300 focus:ring-primary"
-            />
-            <label htmlFor="termsAgreed" className="text-xs text-gray-600 leading-tight">
-                I agree to <button type="button" onClick={() => setShowTermsModal(true)} className="text-primary font-semibold hover:underline">Terms and Conditions</button> and authorize Ambit Finvest to contact me.
-            </label>
-        </div>
-        <div className="h-4">
-            {errors.termsAgreed && <p className="text-xs text-red-500 pl-6">{errors.termsAgreed.message}</p>}
-        </div>
-
-        <div className="flex items-start gap-2">
-            <input 
-                id="communicationsAgreed"
-                type="checkbox" 
-                {...register("communicationsAgreed")} 
-                className="mt-1 w-4 h-4 shrink-0 text-primary rounded border-gray-300 focus:ring-primary"
-            />
-            <label htmlFor="communicationsAgreed" className="text-xs text-gray-600 leading-tight">
-                I agree to receive communications and authorize Ambit Finvest to contact me through SMS, Mail and WhatsApp.
-            </label>
-        </div>
-        <div className="h-4">
-            {errors.communicationsAgreed && <p className="text-xs text-red-500 pl-6">{errors.communicationsAgreed.message}</p>}
-        </div>
-    </div>
-);
-
-return (
-  <div className="w-full max-w-4xl mx-auto bg-white rounded-xl md:rounded-2xl shadow-xl overflow-hidden border border-gray-100 relative">
-    
-    {/* --- TERMS MODAL (WRAPPED IN PORTAL) --- */}
-    {showTermsModal && mounted && createPortal(
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fadeIn">
-        <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[70vh] flex flex-col relative animate-scaleIn">
-          <div className="p-4 border-b flex items-center justify-between bg-gray-50 rounded-t-xl">
-              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                  <ScrollText className="w-5 h-5 text-primary"/> Terms and Conditions
-              </h3>
-              <button 
-                  onClick={() => setShowTermsModal(false)}
-                  className="p-1 hover:bg-gray-200 rounded-full transition-colors"
-              >
-                  <X className="w-5 h-5 text-gray-500" />
-              </button>
+  // Reusable Consent Section Component
+  const ConsentSection = () => (
+      <div className="md:col-span-2 space-y-2 mt-2">
+          <div className="flex items-start gap-2">
+              <input 
+                  id="termsAgreed"
+                  type="checkbox" 
+                  {...register("termsAgreed")} 
+                  className="mt-1 w-4 h-4 shrink-0 text-primary rounded border-gray-300 focus:ring-primary"
+              />
+              <label htmlFor="termsAgreed" className="text-xs text-gray-600 leading-tight">
+                  I agree to <button type="button" onClick={() => setShowTermsModal(true)} className="text-primary font-semibold hover:underline">Terms and Conditions</button> and authorize Ambit Finvest to contact me.
+              </label>
           </div>
-          <div className="p-6 overflow-y-auto text-xs md:text-sm text-gray-600 leading-relaxed text-justify whitespace-pre-wrap">
-              {TERMS_TEXT}
+          <div className="h-4">
+              {errors.termsAgreed && <p className="text-xs text-red-500 pl-6">{errors.termsAgreed.message}</p>}
           </div>
-          <div className="p-4 border-t bg-gray-50 rounded-b-xl flex justify-end">
-              <button 
-                  onClick={() => setShowTermsModal(false)}
-                  className="px-6 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors"
-              >
-                  I Understand
-              </button>
+
+          <div className="flex items-start gap-2">
+              <input 
+                  id="communicationsAgreed"
+                  type="checkbox" 
+                  {...register("communicationsAgreed")} 
+                  className="mt-1 w-4 h-4 shrink-0 text-primary rounded border-gray-300 focus:ring-primary"
+              />
+              <label htmlFor="communicationsAgreed" className="text-xs text-gray-600 leading-tight">
+                  I agree to receive communications and authorize Ambit Finvest to contact me through SMS, Mail and WhatsApp.
+              </label>
           </div>
-        </div>
-      </div>,
-      document.body
-    )}
+          <div className="h-4">
+              {errors.communicationsAgreed && <p className="text-xs text-red-500 pl-6">{errors.communicationsAgreed.message}</p>}
+          </div>
+      </div>
+  );
 
-    {/* Headline */}
-    <div className="bg-gradient-to-r from-primary-50 to-primary-100 px-3 md:px-6 py-2 md:py-4 border-b border-primary-200">
-      <h2 className="text-base md:text-xl lg:text-2xl font-bold text-gray-900 text-center">
-        Apply for a Business Loan up to ₹3 Crore
-      </h2>
-    </div>
+  // --- REAL-TIME AGE VALIDATION LOGIC ---
+  const dobAge = calculateAge(dobValue);
+  // Check if user has entered a date AND the age is outside limits (less than 21 OR greater than 60)
+  const isDobInvalid = !!dobValue && (dobAge < 21 || dobAge > 60);
+  const isDobValid = !!dobValue && !isDobInvalid;
 
-    {/* Progress Bar */}
-    <div className="bg-gradient-to-r from-primary-50 to-primary-100 px-4 py-2 border-b border-primary-200">
-      <div className="flex items-center justify-center">
-        <div className="flex items-center w-full max-w-xl px-2">
-          {[1, 2].map((step) => {
-            const Icon = stepIcons[step - 1];
-            const isActive = currentStep === step;
-            const isCompleted = currentStep > step;
-            
-            return (
-              <div key={step} className="flex items-center flex-1">
-                <div className="flex flex-col items-center justify-center relative z-10 w-full">
-                  <div
-                    className={`relative flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all duration-500 ${
-                      isActive
-                        ? "bg-primary border-primary text-white shadow-md shadow-primary/50"
-                        : isCompleted
-                        ? "bg-secondary-orange border-secondary-orange text-white"
-                        : "bg-white border-gray-300 text-gray-400"
-                    }`}
-                  >
-                    {isCompleted ? <Check className="w-3 h-3" /> : <Icon className="w-3 h-3" />}
-                  </div>
-                  <div className={`mt-1 text-[9px] font-semibold transition-colors text-center ${
-                    isActive ? "text-primary" : isCompleted ? "text-secondary-orange" : "text-gray-400"
-                  }`}>
-                    {stepTitles[step - 1]}
-                  </div>
-                </div>
-                {step < totalSteps && (
-                  <div className="flex-1 h-0.5 mx-3 relative">
-                    <div className="absolute inset-0 bg-gray-200 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full transition-all duration-1000 ease-out rounded-full ${
-                          currentStep > step ? "bg-secondary-orange" : "bg-gray-200"
-                        }`}
-                        style={{ width: currentStep > step ? "100%" : "0%" }}
-                      />
+  return (
+    <div className="w-full max-w-4xl mx-auto bg-white rounded-xl md:rounded-2xl shadow-xl overflow-hidden border border-gray-100 relative">
+      
+      {/* --- TERMS MODAL --- */}
+      {showTermsModal && mounted && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[70vh] flex flex-col relative animate-scaleIn">
+            <div className="p-4 border-b flex items-center justify-between bg-gray-50 rounded-t-xl">
+                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <ScrollText className="w-5 h-5 text-primary"/> Terms and Conditions
+                </h3>
+                <button onClick={() => setShowTermsModal(false)} className="p-1 hover:bg-gray-200 rounded-full transition-colors">
+                    <X className="w-5 h-5 text-gray-500" />
+                </button>
+            </div>
+            <div className="p-6 overflow-y-auto text-xs md:text-sm text-gray-600 leading-relaxed text-justify whitespace-pre-wrap">
+                {TERMS_TEXT}
+            </div>
+            <div className="p-4 border-t bg-gray-50 rounded-b-xl flex justify-end">
+                <button onClick={() => setShowTermsModal(false)} className="px-6 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors">
+                    I Understand
+                </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Headline & Progress Bar sections remain same... */}
+      <div className="bg-gradient-to-r from-primary-50 to-primary-100 px-3 md:px-6 py-2 md:py-4 border-b border-primary-200">
+        <h2 className="text-base md:text-xl lg:text-2xl font-bold text-gray-900 text-center">
+          Apply for a Business Loan up to ₹3 Crore
+        </h2>
+      </div>
+
+      <div className="bg-gradient-to-r from-primary-50 to-primary-100 px-4 py-2 border-b border-primary-200">
+        <div className="flex items-center justify-center">
+          <div className="flex items-center w-full max-w-xl px-2">
+            {[1, 2].map((step) => {
+              const Icon = stepIcons[step - 1];
+              const isActive = currentStep === step;
+              const isCompleted = currentStep > step;
+              return (
+                <div key={step} className="flex items-center flex-1">
+                  <div className="flex flex-col items-center justify-center relative z-10 w-full">
+                    <div className={`relative flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all duration-500 ${isActive ? "bg-primary border-primary text-white shadow-md shadow-primary/50" : isCompleted ? "bg-secondary-orange border-secondary-orange text-white" : "bg-white border-gray-300 text-gray-400"}`}>
+                      {isCompleted ? <Check className="w-3 h-3" /> : <Icon className="w-3 h-3" />}
+                    </div>
+                    <div className={`mt-1 text-[9px] font-semibold transition-colors text-center ${isActive ? "text-primary" : isCompleted ? "text-secondary-orange" : "text-gray-400"}`}>
+                      {stepTitles[step - 1]}
                     </div>
                   </div>
-                )}
-              </div>
-            );
-          })}
+                  {step < totalSteps && (
+                    <div className="flex-1 h-0.5 mx-3 relative">
+                      <div className="absolute inset-0 bg-gray-200 rounded-full overflow-hidden">
+                        <div className={`h-full transition-all duration-1000 ease-out rounded-full ${currentStep > step ? "bg-secondary-orange" : "bg-gray-200"}`} style={{ width: currentStep > step ? "100%" : "0%" }} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
-    </div>
 
-    {/* Form Content */}
-    <div className="p-3 md:p-5">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 md:space-y-4">
-        
-        {/* Step 1: Personal Details */}
-        {currentStep === 1 && (
-          <div className={`space-y-1 ${isAnimating ? "animate-slideIn" : ""}`}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-1">
-              
-              <div className="space-y-1">
-                <div className="relative">
-                  <input
-                    {...register("fullName")}
-                    type="text"
-                    className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500"
-                    placeholder="Enter Your full name"
-                    onFocus={() => setFullNameFocused(true)}
-                    onBlur={() => setFullNameFocused(false)}
-                  />
-                  <span
-                    className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${fullNameFocused || !!fullNameValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}
-                  >
-                    Full Name *
-                  </span>
+      {/* Form Content */}
+      <div className="p-3 md:p-5">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 md:space-y-4">
+          
+          {/* Step 1: Personal Details */}
+          {currentStep === 1 && (
+            <div className={`space-y-1 ${isAnimating ? "animate-slideIn" : ""}`}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-1">
+                
+                {/* Full Name & Email (Kept same) */}
+                <div className="space-y-1">
+                  <div className="relative">
+                    <input {...register("fullName")} type="text" className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter Your full name" onFocus={() => setFullNameFocused(true)} onBlur={() => setFullNameFocused(false)} />
+                    <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${fullNameFocused || !!fullNameValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Full Name *</span>
+                  </div>
+                  <div className="h-4">{errors.fullName && <p className="text-xs text-red-500">{errors.fullName.message}</p>}</div>
                 </div>
-                <div className="h-4">
-                  {errors.fullName && <p className="text-xs text-red-500">{errors.fullName.message}</p>}
-                </div>
-              </div>
 
-              <div className="space-y-1">
-                <div className="relative">
-                  <input
-                    {...register("email")}
-                    type="email"
-                    className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500"
-                    placeholder="Enter your email"
-                    onFocus={() => setEmailFocused(true)}
-                    onBlur={() => setEmailFocused(false)}
-                  />
-                  <span
-                    className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${emailFocused || !!emailValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}
-                  >
-                    Email address *
-                  </span>
+                <div className="space-y-1">
+                  <div className="relative">
+                    <input {...register("email")} type="email" className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter your email" onFocus={() => setEmailFocused(true)} onBlur={() => setEmailFocused(false)} />
+                    <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${emailFocused || !!emailValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Email address *</span>
+                  </div>
+                  <div className="h-4">{errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}</div>
                 </div>
-                <div className="h-4">
-                  {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
-                </div>
-              </div>
 
-              {/* MOBILE */}
-              <div className="space-y-1">
-                <div className="relative">
-                  <input
-                    {...register("mobileNumber")}
-                    type="tel"
-                    disabled={isMobileVerified}
-                    onInput={(e) => {
-                      e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
-                      if (e.currentTarget.value.length > 10) e.currentTarget.value = e.currentTarget.value.slice(0, 10);
-                    }}
-                    className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary disabled:bg-gray-50 placeholder-transparent focus:placeholder-gray-500"
-                    placeholder="Enter mobile number"
-                    onFocus={() => setMobileFocused(true)}
-                    onBlur={() => setMobileFocused(false)}
-                  />
-                  {isSendingOtp && (
-                      <div className="absolute right-3 top-2.5">
-                          <Loader2 className="w-4 h-4 text-primary animate-spin" />
-                      </div>
-                  )}
-                  <span
-                    className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${mobileFocused || !!mobileNumber ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}
-                  >
-                    Mobile Number *
-                  </span>
+                {/* Mobile & OTP (Kept same) */}
+                <div className="space-y-1">
+                  <div className="relative">
+                    <input {...register("mobileNumber")} type="tel" disabled={isMobileVerified} onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, ''); if (e.currentTarget.value.length > 10) e.currentTarget.value = e.currentTarget.value.slice(0, 10); }} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary disabled:bg-gray-50 placeholder-transparent focus:placeholder-gray-500" placeholder="Enter mobile number" onFocus={() => setMobileFocused(true)} onBlur={() => setMobileFocused(false)} />
+                    {isSendingOtp && <div className="absolute right-3 top-2.5"><Loader2 className="w-4 h-4 text-primary animate-spin" /></div>}
+                    <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${mobileFocused || !!mobileNumber ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Mobile Number *</span>
+                  </div>
+                  <div className="h-4">{errors.mobileNumber ? <p className="text-xs text-red-500">{errors.mobileNumber.message}</p> : otpSentMsg ? <p className="text-xs text-green-600 animate-fadeIn">{otpSentMsg}</p> : <p className="text-xs text-gray-500">OTP will be sent to this number</p>}</div>
                 </div>
-                <div className="h-4">
-                  {errors.mobileNumber ? (
-                    <p className="text-xs text-red-500">{errors.mobileNumber.message}</p>
-                  ) : otpSentMsg ? (
-                    <p className="text-xs text-green-600 animate-fadeIn">{otpSentMsg}</p>
-                  ) : (
-                    <p className="text-xs text-gray-500">OTP will be sent to this number</p>
-                  )}
-                </div>
-              </div>
 
-              {/* OTP */}
-              <div className="space-y-1">
-                <div className="relative">
-                  <input
-                    {...register("otp")}
-                    type="text"
-                    maxLength={4} 
-                    disabled={!otpToken || isMobileVerified}
-                    onInput={(e) => {
-                      e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
-                    }}
-                    className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary disabled:bg-gray-50 placeholder-transparent focus:placeholder-gray-500"
-                    placeholder="Enter 4-digit OTP"
-                    onFocus={() => setOtpFocused(true)}
-                    onBlur={() => setOtpFocused(false)}
-                  />
-                  {isVerifyingOtp && <div className="absolute right-3 top-2.5"><Loader2 className="w-4 h-4 text-primary animate-spin" /></div>}
-                  <span
-                    className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${otpFocused || !!enteredOtp ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}
-                  >
-                    OTP *
-                  </span>
+                <div className="space-y-1">
+                  <div className="relative">
+                    <input {...register("otp")} type="text" maxLength={4} disabled={!otpToken || isMobileVerified} onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, ''); }} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary disabled:bg-gray-50 placeholder-transparent focus:placeholder-gray-500" placeholder="Enter 4-digit OTP" onFocus={() => setOtpFocused(true)} onBlur={() => setOtpFocused(false)} />
+                    {isVerifyingOtp && <div className="absolute right-3 top-2.5"><Loader2 className="w-4 h-4 text-primary animate-spin" /></div>}
+                    <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${otpFocused || !!enteredOtp ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>OTP *</span>
+                  </div>
+                  <div className="h-4">{otpError ? <p className="text-xs text-red-500">{otpError}</p> : isMobileVerified ? <div className="flex items-center gap-1 text-xs text-green-600 font-medium"><Check className="w-3 h-3" /> Verified</div> : <p className="text-xs text-gray-500">Enter number to get otp</p>}</div>
                 </div>
-                <div className="h-4">
-                  {otpError ? (
-                      <p className="text-xs text-red-500">{otpError}</p>
-                  ) : isMobileVerified ? (
-                      <div className="flex items-center gap-1 text-xs text-green-600 font-medium">
-                          <Check className="w-3 h-3" /> Verified
-                      </div>
-                  ) : (
-                      <p className="text-xs text-gray-500">Enter number to get otp</p>
-                  )}
-                </div>
-              </div>
 
-              <div className="space-y-2 mt-4">
-                <div className="relative">
-                  <input 
-                    {...register("dateOfBirth")} 
-                    type="date" 
-                    min={minDate}
-                    max={maxDate}
-                    className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary"
-                    onFocus={() => setDobFocused(true)}
-                    onBlur={() => setDobFocused(false)}
-                  />
-                  <span
-                    className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${dobFocused || !!dobValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-3 text-sm text-gray-700"}`}
-                  >
-                    Date of birth *
-                  </span>
-                  
-                </div>
-                <div className="h-4">
-                  {errors.dateOfBirth ? (
-                    <p className="text-xs text-red-500">{errors.dateOfBirth.message}</p>
-                  ) : (
-                    <p className="text-xs text-gray-500">Age must be between 21 and 60</p>
-                  )}
-                </div>
-              </div>
+                {/* --- DATE OF BIRTH SECTION --- */}
+                <div className="space-y-2 mt-4">
+                  <div className="relative">
+                    <input 
+                      {...register("dateOfBirth")} 
+                      type="date" 
+                      max={new Date().toISOString().split("T")[0]} 
+                      className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary"
+                      onFocus={() => setDobFocused(true)}
+                      onBlur={() => setDobFocused(false)}
+                    />
+                    
+                    {/* Icon Logic: Only show Green Check if valid */}
+                    {isDobValid && (
+                        <div className="absolute right-10 top-2.5 pointer-events-none bg-white pl-1">
+                            <Check className="w-4 h-4 text-green-600 animate-scaleIn" />
+                        </div>
+                    )}
 
-              {/* Custom State Dropdown */}
-              <div className="space-y-1 mt-3 relative" ref={stateDropdownRef}>
-                <input type="hidden" {...register("state")} />
-                <div 
-                    onClick={() => setIsStateDropdownOpen(!isStateDropdownOpen)}
-                    className="relative w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white flex justify-between items-center cursor-pointer"
-                >
-                    <span className={selectedState ? "text-black" : "text-gray-500"}>
-                        {selectedState || "Select State"}
-                    </span>
-                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isStateDropdownOpen ? 'rotate-180' : ''}`} />
                     <span
-                      className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${isStateDropdownOpen || !!selectedState ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}
+                      className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${dobFocused || !!dobValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-3 text-sm text-gray-700"}`}
                     >
-                      Select State *
+                      Date of birth *
                     </span>
-                </div>
-                
-                {isStateDropdownOpen && (
-                    <ul className="absolute z-50 left-0 right-0 mt-1 bg-white border-2 border-gray-100 rounded-lg shadow-xl max-h-40 overflow-y-auto">
-                        {states.map((state) => (
-                            <li 
-                                key={state} 
-                                onClick={() => {
-                                    setValue("state", state, { shouldValidate: true });
-                                    setValue("city", "");
-                                    setIsStateDropdownOpen(false);
-                                }}
-                                className="px-3 py-2 text-sm hover:bg-gray-50 hover:text-primary cursor-pointer transition-colors"
-                            >
-                                {state}
-                            </li>
-                        ))}
-                    </ul>
-                )}
-                
-                <div className="h-4">
-                  {errors.state && <p className="text-xs text-red-500">{errors.state.message}</p>}
-                </div>
-              </div>
-
-              <div className="space-y-1 mt-4">
-                <div className="relative">
-                  <input type="text" {...register("city")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter your city" onFocus={() => setCityFocused(true)} onBlur={() => setCityFocused(false)} />
-                  <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${cityFocused || !!cityValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>City *</span>
-                </div>
-                <div className="h-4">
-                  {errors.city && <p className="text-xs text-red-500">{errors.city.message}</p>}
-                </div>
-              </div>
-
-              <div className="space-y-1 mt-4">
-                <div className="relative">
-                  <input 
-                    {...register("pincode")} 
-                    type="text" 
-                    maxLength={6}
-                    onInput={(e) => e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '')}
-                    className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" 
-                    placeholder="Enter 6-digit pincode" 
-                    onFocus={() => setPincodeFocused(true)} onBlur={() => setPincodeFocused(false)}
-                  />
-                  <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${pincodeFocused || !!pincodeValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Pincode *</span>
-                </div>
-                <div className="h-4">
-                  {errors.pincode && <p className="text-xs text-red-500">{errors.pincode.message}</p>}
-                </div>
-              </div>
-              
-            </div>
-          </div>
-        )}
-
-        {/* Step 2: Business Details */}
-        {currentStep === 2 && (
-          <div className={`space-y-1 ${isAnimating ? "animate-slideIn" : ""}`}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-1">
-              <div className="space-y-1">
-                <div className="relative">
-                  <input
-                    {...register("loanAmount")}
-                    type="text"
-                    inputMode="numeric"
-                    className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500"
-                    placeholder="Enter loan amount (₹3L - ₹3Cr)"
-                    onInput={(e) => {
-                      const cleaned = e.currentTarget.value.replace(/[^0-9]/g, "");
-                      setValue("loanAmount", cleaned, { shouldValidate: false });
-                    }}
-                    onBlur={(e) => {
-                      const clamped = clampLoanAmount(e.currentTarget.value);
-                      setValue("loanAmount", clamped, { shouldValidate: true });
-                      setLoanAmountFocused(false);
-                    }}
-                    onFocus={() => setLoanAmountFocused(true)}
-                  />
-                  <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${loanAmountFocused || !!loanAmountValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Loan Amount Required *</span>
-                </div>
-                <div className="h-4">
-                  {errors.loanAmount && <p className="text-xs text-red-500">{errors.loanAmount.message}</p>}
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <div className="relative">
-                  <select {...register("constitution")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white" onFocus={() => setConstitutionFocused(true)} onBlur={() => setConstitutionFocused(false)}>
-                    <option value="">Select Constitution</option>
-                    {constitutions.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                  <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${constitutionFocused || !!constitutionValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Select Constitution *</span>
-                </div>
-                <div className="h-4">
-                  {errors.constitution && <p className="text-xs text-red-500">{errors.constitution.message}</p>}
-                </div>
-              </div>
-
-              <div className="space-y-1 mt-4">
-                <div className="relative">
-                  <select {...register("ownershipProof")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white" onFocus={() => setOwnershipFocused(true)} onBlur={() => setOwnershipFocused(false)}>
-                    <option value="">Select Ownership Proof</option>
-                    {ownershipProofs.map((p) => <option key={p} value={p}>{p}</option>)}
-                  </select>
-                  <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${ownershipFocused || !!ownershipValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Select Ownership Proof *</span>
-                </div>
-                <div className="h-4">
-                  {errors.ownershipProof && <p className="text-xs text-red-500">{errors.ownershipProof.message}</p>}
-                </div>
-              </div>
-
-              <div className="space-y-1 mt-4">
-                <div className="relative">
-                  <select {...register("yearsInBusiness")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white" onFocus={() => setYearsFocused(true)} onBlur={() => setYearsFocused(false)}>
-                    <option value="">Select Years</option>
-                    {yearsInBusiness.map((y) => <option key={y} value={y}>{y}</option>)}
-                  </select>
-                  <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${yearsFocused || !!yearsValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Years in Business *</span>
-                </div>
-                <div className="h-4">
-                  {errors.yearsInBusiness && <p className="text-xs text-red-500">{errors.yearsInBusiness.message}</p>}
-                </div>
-              </div>
-
-              <div className="space-y-1 mt-5">
-                <div className="relative">
-                  <select {...register("annualTurnover")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white" onFocus={() => setTurnoverFocused(true)} onBlur={() => setTurnoverFocused(false)}>
-                    <option value="">Select Turnover</option>
-                    {annualTurnovers.map((t) => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                  <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${turnoverFocused || !!turnoverValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Annual Turnover *</span>
-                </div>
-                <div className="h-4">
-                  {errors.annualTurnover && <p className="text-xs text-red-500">{errors.annualTurnover.message}</p>}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold text-gray-700">Is your Business GST registered? *</label>
-                <div className="w-full border-2 border-gray-200 rounded-lg overflow-hidden h-[38px]">
-                  <div className="grid grid-cols-2 h-full">
-                    <label className="flex items-center justify-center gap-2 h-full cursor-pointer border-r border-gray-200">
-                      <input {...register("gstRegistered")} type="radio" value="yes" className="w-4 h-4 text-primary focus:ring-primary" />
-                      <span className="text-sm text-gray-700 font-medium">Yes</span>
-                    </label>
-                    <label className="flex items-center justify-center gap-2 h-full cursor-pointer">
-                      <input {...register("gstRegistered")} type="radio" value="no" className="w-4 h-4 text-primary focus:ring-primary" />
-                      <span className="text-sm text-gray-700 font-medium">No</span>
-                    </label>
+                    
+                  </div>
+                  <div className="h-4">
+                    {errors.dateOfBirth ? (
+                      // 1. Zod Error (e.g., submit clicked)
+                      <p className="text-xs text-red-500 font-medium">{errors.dateOfBirth.message}</p>
+                    ) : isDobInvalid ? (
+                      // 2. Real-time Warning (e.g., user selected 2025)
+                      <p className="text-xs text-red-500 font-medium">Age must be between 21 and 60 years</p>
+                    ) : (
+                      // 3. Default Helper Text
+                      <p className="text-xs text-gray-500">Age must be between 21 and 60</p>
+                    )}
                   </div>
                 </div>
-                <div className="h-4">
-                  {errors.gstRegistered && <p className="text-xs text-red-500">{errors.gstRegistered.message}</p>}
+
+                {/* State, City, Pincode (Kept Same) */}
+                <div className="space-y-1 mt-3 relative" ref={stateDropdownRef}>
+                  <input type="hidden" {...register("state")} />
+                  <div onClick={() => setIsStateDropdownOpen(!isStateDropdownOpen)} className="relative w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white flex justify-between items-center cursor-pointer">
+                      <span className={selectedState ? "text-black" : "text-gray-500"}>{selectedState || "Select State"}</span>
+                      <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isStateDropdownOpen ? 'rotate-180' : ''}`} />
+                      <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${isStateDropdownOpen || !!selectedState ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Select State *</span>
+                  </div>
+                  {isStateDropdownOpen && (
+                      <ul className="absolute z-50 left-0 right-0 mt-1 bg-white border-2 border-gray-100 rounded-lg shadow-xl max-h-40 overflow-y-auto">
+                          {states.map((state) => (
+                              <li key={state} onClick={() => { setValue("state", state, { shouldValidate: true }); setValue("city", ""); setIsStateDropdownOpen(false); }} className="px-3 py-2 text-sm hover:bg-gray-50 hover:text-primary cursor-pointer transition-colors">
+                                  {state}
+                              </li>
+                          ))}
+                      </ul>
+                  )}
+                  <div className="h-4">{errors.state && <p className="text-xs text-red-500">{errors.state.message}</p>}</div>
                 </div>
+
+                <div className="space-y-1 mt-4">
+                  <div className="relative">
+                    <input type="text" {...register("city")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter your city" onFocus={() => setCityFocused(true)} onBlur={() => setCityFocused(false)} />
+                    <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${cityFocused || !!cityValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>City *</span>
+                  </div>
+                  <div className="h-4">{errors.city && <p className="text-xs text-red-500">{errors.city.message}</p>}</div>
+                </div>
+
+                <div className="space-y-1 mt-4">
+                  <div className="relative">
+                    <input {...register("pincode")} type="text" maxLength={6} onInput={(e) => e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '')} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter 6-digit pincode" onFocus={() => setPincodeFocused(true)} onBlur={() => setPincodeFocused(false)} />
+                    <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${pincodeFocused || !!pincodeValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Pincode *</span>
+                  </div>
+                  <div className="h-4">{errors.pincode && <p className="text-xs text-red-500">{errors.pincode.message}</p>}</div>
+                </div>
+                
               </div>
-
-              {/* Added Consent Section to Step 2 (also in Step 1) */}
-              <ConsentSection />
             </div>
-          </div>
-        )}
-
-        {/* Navigation Buttons */}
-        <div className="pt-1 border-t-2 border-gray-100">
-          {currentStep < totalSteps ? (
-            <button
-              type="button"
-              onClick={nextStep}
-              className="w-full px-6 py-3 bg-gradient-to-r from-primary to-secondary-burgundy text-white rounded-lg text-sm font-semibold hover:from-secondary-burgundy transition-all shadow-lg flex items-center justify-center gap-2"
-            >
-              Apply Now
-            </button>
-          ) : (
-            <button
-              type="submit"
-              className="w-full px-6 py-3 bg-gradient-to-r from-primary to-secondary-burgundy text-white rounded-lg text-sm font-semibold hover:from-secondary-burgundy transition-all shadow-lg flex items-center justify-center gap-2"
-            >
-              Apply Now
-            </button>
           )}
-        </div>
-      </form>
+
+          {/* Step 2: Business Details (Unchanged logic) */}
+          {currentStep === 2 && (
+            <div className={`space-y-1 ${isAnimating ? "animate-slideIn" : ""}`}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-1">
+                {/* Loan Amount */}
+                <div className="space-y-1">
+                  <div className="relative">
+                    <input {...register("loanAmount")} type="text" inputMode="numeric" className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter loan amount (₹3L - ₹3Cr)" onInput={(e) => { const cleaned = e.currentTarget.value.replace(/[^0-9]/g, ""); setValue("loanAmount", cleaned, { shouldValidate: false }); }} onBlur={(e) => { const clamped = clampLoanAmount(e.currentTarget.value); setValue("loanAmount", clamped, { shouldValidate: true }); setLoanAmountFocused(false); }} onFocus={() => setLoanAmountFocused(true)} />
+                    <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${loanAmountFocused || !!loanAmountValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Loan Amount Required *</span>
+                  </div>
+                  <div className="h-4">{errors.loanAmount && <p className="text-xs text-red-500">{errors.loanAmount.message}</p>}</div>
+                </div>
+                {/* Constitution */}
+                <div className="space-y-1">
+                  <div className="relative">
+                    <select {...register("constitution")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white" onFocus={() => setConstitutionFocused(true)} onBlur={() => setConstitutionFocused(false)}>
+                      <option value="">Select Constitution</option>
+                      {constitutions.map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${constitutionFocused || !!constitutionValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Select Constitution *</span>
+                  </div>
+                  <div className="h-4">{errors.constitution && <p className="text-xs text-red-500">{errors.constitution.message}</p>}</div>
+                </div>
+                {/* Ownership */}
+                <div className="space-y-1 mt-4">
+                  <div className="relative">
+                    <select {...register("ownershipProof")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white" onFocus={() => setOwnershipFocused(true)} onBlur={() => setOwnershipFocused(false)}>
+                      <option value="">Select Ownership Proof</option>
+                      {ownershipProofs.map((p) => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                    <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${ownershipFocused || !!ownershipValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Select Ownership Proof *</span>
+                  </div>
+                  <div className="h-4">{errors.ownershipProof && <p className="text-xs text-red-500">{errors.ownershipProof.message}</p>}</div>
+                </div>
+                {/* Years */}
+                <div className="space-y-1 mt-4">
+                  <div className="relative">
+                    <select {...register("yearsInBusiness")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white" onFocus={() => setYearsFocused(true)} onBlur={() => setYearsFocused(false)}>
+                      <option value="">Select Years</option>
+                      {yearsInBusiness.map((y) => <option key={y} value={y}>{y}</option>)}
+                    </select>
+                    <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${yearsFocused || !!yearsValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Years in Business *</span>
+                  </div>
+                  <div className="h-4">{errors.yearsInBusiness && <p className="text-xs text-red-500">{errors.yearsInBusiness.message}</p>}</div>
+                </div>
+                {/* Turnover */}
+                <div className="space-y-1 mt-5">
+                  <div className="relative">
+                    <select {...register("annualTurnover")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white" onFocus={() => setTurnoverFocused(true)} onBlur={() => setTurnoverFocused(false)}>
+                      <option value="">Select Turnover</option>
+                      {annualTurnovers.map((t) => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                    <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${turnoverFocused || !!turnoverValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Annual Turnover *</span>
+                  </div>
+                  <div className="h-4">{errors.annualTurnover && <p className="text-xs text-red-500">{errors.annualTurnover.message}</p>}</div>
+                </div>
+                {/* GST */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold text-gray-700">Is your Business GST registered? *</label>
+                  <div className="w-full border-2 border-gray-200 rounded-lg overflow-hidden h-[38px]">
+                    <div className="grid grid-cols-2 h-full">
+                      <label className="flex items-center justify-center gap-2 h-full cursor-pointer border-r border-gray-200">
+                        <input {...register("gstRegistered")} type="radio" value="yes" className="w-4 h-4 text-primary focus:ring-primary" />
+                        <span className="text-sm text-gray-700 font-medium">Yes</span>
+                      </label>
+                      <label className="flex items-center justify-center gap-2 h-full cursor-pointer">
+                        <input {...register("gstRegistered")} type="radio" value="no" className="w-4 h-4 text-primary focus:ring-primary" />
+                        <span className="text-sm text-gray-700 font-medium">No</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div className="h-4">{errors.gstRegistered && <p className="text-xs text-red-500">{errors.gstRegistered.message}</p>}</div>
+                </div>
+
+                <ConsentSection />
+              </div>
+            </div>
+          )}
+
+          {/* Navigation Buttons */}
+          <div className="pt-1 border-t-2 border-gray-100">
+            {currentStep < totalSteps ? (
+              <button type="button" onClick={nextStep} className="w-full px-6 py-3 bg-gradient-to-r from-primary to-secondary-burgundy text-white rounded-lg text-sm font-semibold hover:from-secondary-burgundy transition-all shadow-lg flex items-center justify-center gap-2">
+                Apply Now
+              </button>
+            ) : (
+              <button type="submit" className="w-full px-6 py-3 bg-gradient-to-r from-primary to-secondary-burgundy text-white rounded-lg text-sm font-semibold hover:from-secondary-burgundy transition-all shadow-lg flex items-center justify-center gap-2">
+                Apply Now
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
     </div>
-  </div>
-);
+  );
 }

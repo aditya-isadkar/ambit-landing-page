@@ -3,7 +3,7 @@
 import { FileText, User, Briefcase, Banknote, CreditCard, Home } from "lucide-react";
 import ScrollAnimation from "./ScrollAnimation";
 
-export default function DocumentsRequiredDesignTwo() {
+export default function DocumentsRequired() {
   const documentCategories = [
     {
       title: "KYC of Applicant",
@@ -33,9 +33,12 @@ export default function DocumentsRequiredDesignTwo() {
   ];
 
   return (
-    <section className="py-16 bg-gradient-to-br from-gray-50 via-white to-gray-50 relative overflow-hidden">
-      {/* Decorative Elements - Unchanged */}
-      <div className="absolute top-0 right-0 w-1/2 h-full bg-primary-50/30 transform skew-x-12 origin-top"></div>
+    // Updated background classes to match the source code provided
+    <section className="py-20 bg-gradient-to-br from-primary-50 via-white to-primary-50 relative overflow-hidden">
+      
+      {/* Updated Decorative Elements from Source */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-primary-200/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary-200/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
       
       <div className="container mx-auto px-4 relative z-10">
         <ScrollAnimation direction="up">
@@ -53,27 +56,31 @@ export default function DocumentsRequiredDesignTwo() {
         </ScrollAnimation>
 
         <div className="w-full">
-          {/* Grid setup for 5 columns on desktop, 1 on mobile */}
+          {/* Grid: 1 column on mobile (vertical), 5 columns on desktop (horizontal) */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             {documentCategories.map((category, index) => {
               const Icon = category.icon;
               return (
                 <ScrollAnimation key={index} direction="up" delay={index * 0.1} className="h-full">
-                  <div className="relative h-full flex flex-col">
-                    {/* Content Card */}
-                    <div className="pt-6 bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-primary transition-all duration-300 h-full flex flex-col">
-                      <div className="flex flex-col items-center text-center flex-1">
-                        <div className="w-12 h-12 bg-gradient-to-br from-primary to-secondary-burgundy rounded-lg flex items-center justify-center mb-3 shadow-sm">
-                          <Icon className="w-6 h-6 text-white" />
-                        </div>
-                        <h3 className="text-sm font-bold text-gray-900 mb-2">
-                          {category.title}
-                        </h3>
-                        <p className="text-xs text-gray-600 leading-relaxed flex-1">
-                          {category.description}
-                        </p>
-                      </div>
+                  <div className="group h-full relative bg-white rounded-2xl p-6 pt-8
+                    border-t-4 border-t-primary 
+                    border-x border-b border-gray-200 
+                    hover:border-primary
+                    transition-colors duration-300 
+                    flex flex-col items-center text-center shadow-sm">
+                    
+                    {/* Icon Styled EXACTLY like EasySteps (No zoom, specific size) */}
+                    <div className="w-12 h-12 bg-gradient-to-br from-primary to-secondary-burgundy rounded-lg flex items-center justify-center mb-3 shadow-sm flex-shrink-0">
+                      <Icon className="w-6 h-6 text-white" />
                     </div>
+                    
+                    {/* Text Content */}
+                    <h3 className="text-sm font-bold text-gray-900 mb-2">
+                      {category.title}
+                    </h3>
+                    <p className="text-xs text-gray-500 leading-relaxed font-medium">
+                      {category.description}
+                    </p>
                   </div>
                 </ScrollAnimation>
               );
