@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Check, User, Briefcase, Loader2, X, ScrollText, ChevronDown } from "lucide-react";
+import SubmissionSuccessModal from "./SubmissionSuccessModal";
 
 // --- CONSTANTS & DATA ---
 
@@ -165,6 +166,9 @@ export default function MultipartForm() {
   const ownershipValue = watch("ownershipProof");
   const yearsValue = watch("yearsInBusiness");
   const turnoverValue = watch("annualTurnover");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   // --- MOUNT EFFECT ---
   useEffect(() => {
@@ -318,13 +322,53 @@ export default function MultipartForm() {
     }
   };
 
-  const onSubmit = (data: FormData) => {
+  const onSubmit = async (data: FormData) => {
     if (!isMobileVerified) {
-      alert("Mobile number verification is required.");
+      setSubmitError("Mobile number verification is required.");
       return;
     }
-    console.log("Form submitted:", data);
-    alert("Application submitted successfully!");
+    try {
+      setIsSubmitting(true);
+      setSubmitError("");
+      const formPayload = {
+        fullName: data.fullName,
+        email: data.email,
+        mobileNumber: data.mobileNumber,
+        otp: data.otp,
+        dateOfBirth: data.dateOfBirth,
+        state: data.state,
+        city: data.city,
+        pincode: data.pincode,
+        loanAmount: data.loanAmount,
+        constitution: data.constitution,
+        ownershipProof: data.ownershipProof,
+        yearsInBusiness: data.yearsInBusiness,
+        annualTurnover: data.annualTurnover,
+        gstRegistered: data.gstRegistered,
+      };
+      console.log("[MultipartForm] Submitting payload", formPayload);
+      const response = await fetch("/api/landing/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ formData: formPayload }),
+      });
+      const payload = await response.json();
+      console.log("[MultipartForm] Submission response", { status: response.status, payload });
+      if (!response.ok || !payload.ok) {
+        if (response.status === 409) {
+          setSubmitError("Mobile number already exists.");
+        } else {
+          setSubmitError("Submission failed. Please try again.");
+        }
+        return;
+      }
+      setShowSuccessModal(true);
+    } catch (err) {
+      console.error(err);
+      setSubmitError("Unexpected error during submission.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const clampLoanAmount = (value: string) => {
@@ -652,12 +696,16 @@ export default function MultipartForm() {
                 Apply Now
               </button>
             ) : (
-              <button type="submit" className="w-full px-6 py-3 bg-gradient-to-r from-primary to-secondary-burgundy text-white rounded-lg text-sm font-semibold hover:from-secondary-burgundy transition-all shadow-lg flex items-center justify-center gap-2">
-                Apply Now
+              <button type="submit" disabled={isSubmitting} className="w-full px-6 py-3 bg-gradient-to-r from-primary to-secondary-burgundy text-white rounded-lg text-sm font-semibold hover:from-secondary-burgundy transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-70">
+                {isSubmitting ? "Submitting..." : "Apply Now"}
               </button>
             )}
+            <div className="h-5 mt-2">
+              {submitError && <p className="text-xs text-red-600 text-center">{submitError}</p>}
+            </div>
           </div>
         </form>
+        <SubmissionSuccessModal open={showSuccessModal} onClose={() => setShowSuccessModal(false)} />
       </div>
     </div>
   );
