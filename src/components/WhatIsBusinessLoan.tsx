@@ -45,7 +45,7 @@ export default function WhatIsBusinessLoan() {
                 <div className="relative bg-gradient-to-br from-primary to-secondary-burgundy rounded-3xl p-12 text-white transform rotate-3 hover:rotate-0 transition-transform duration-500">
                   <div className="absolute -top-4 -right-4 w-24 h-24 bg-secondary-orange rounded-full opacity-20 blur-2xl"></div>
                   <div className="relative z-10">
-                    <div className="text-6xl font-bold mb-4">₹3Cr</div>
+                    <div className="text-6xl font-bold mb-1">₹3Cr</div>
                     <div className="text-xl mb-6 opacity-90">Maximum Loan Amount</div>
                     <div className="space-y-3">
                       <div className="flex items-center gap-3">

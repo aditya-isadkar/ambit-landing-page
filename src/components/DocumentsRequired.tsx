@@ -67,20 +67,22 @@ export default function DocumentsRequired() {
                     border-x border-b border-gray-200 
                     hover:border-primary
                     transition-colors duration-300 
-                    flex flex-col items-center text-center shadow-sm">
+                    flex md:flex-col items-start md:items-center text-left md:text-center shadow-sm">
                     
                     {/* Icon Styled EXACTLY like EasySteps (No zoom, specific size) */}
-                    <div className="w-12 h-12 bg-gradient-to-br from-primary to-secondary-burgundy rounded-lg flex items-center justify-center mb-3 shadow-sm flex-shrink-0">
+                    <div className="w-12 h-12 bg-gradient-to-br from-primary to-secondary-burgundy rounded-lg flex items-center justify-center mb-0 md:mb-3 mr-3 md:mr-0 shadow-sm flex-shrink-0">
                       <Icon className="w-6 h-6 text-white" />
                     </div>
                     
                     {/* Text Content */}
-                    <h3 className="text-sm font-bold text-gray-900 mb-2">
-                      {category.title}
-                    </h3>
-                    <p className="text-xs text-gray-500 leading-relaxed font-medium">
-                      {category.description}
-                    </p>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">
+                        {category.title}
+                      </h3>
+                      <p className="text-xs text-gray-500 leading-relaxed font-medium">
+                        {category.description}
+                      </p>
+                    </div>
                   </div>
                 </ScrollAnimation>
               );

@@ -518,7 +518,7 @@ export default function MultipartForm() {
                     {isSendingOtp && <div className="absolute right-3 top-2.5"><Loader2 className="w-4 h-4 text-primary animate-spin" /></div>}
                     <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${mobileFocused || !!mobileNumber ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Mobile Number *</span>
                   </div>
-                  <div className="h-4">{errors.mobileNumber ? <p className="text-xs text-red-500">{errors.mobileNumber.message}</p> : otpSentMsg ? <p className="text-xs text-green-600 animate-fadeIn">{otpSentMsg}</p> : <p className="text-xs text-gray-500">OTP will be sent to this number</p>}</div>
+                  <div className="h-4">{errors.mobileNumber && <p className="text-xs text-red-500">{errors.mobileNumber.message}</p>}</div>
                 </div>
 
                 <div className="space-y-1">
@@ -527,17 +527,17 @@ export default function MultipartForm() {
                     {isVerifyingOtp && <div className="absolute right-3 top-2.5"><Loader2 className="w-4 h-4 text-primary animate-spin" /></div>}
                     <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${otpFocused || !!enteredOtp ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>OTP *</span>
                   </div>
-                  <div className="h-4">{otpError ? <p className="text-xs text-red-500">{otpError}</p> : isMobileVerified ? <div className="flex items-center gap-1 text-xs text-green-600 font-medium"><Check className="w-3 h-3" /> Verified</div> : <p className="text-xs text-gray-500">Enter number to get otp</p>}</div>
+                  <div className="h-4">{otpError && <p className="text-xs text-red-500">{otpError}</p>}</div>
                 </div>
 
                 {/* --- DATE OF BIRTH SECTION --- */}
-                <div className="space-y-2 mt-4">
+                <div className="space-y-1 mt-1">
                   <div className="relative">
                     <input 
                       {...register("dateOfBirth")} 
                       type="date" 
                       max={new Date().toISOString().split("T")[0]} 
-                      className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary"
+                      className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white placeholder-transparent focus:placeholder-gray-500"
                       onFocus={() => setDobFocused(true)}
                       onBlur={() => setDobFocused(false)}
                     />
@@ -558,20 +558,15 @@ export default function MultipartForm() {
                   </div>
                   <div className="h-4">
                     {errors.dateOfBirth ? (
-                      // 1. Zod Error (e.g., submit clicked)
                       <p className="text-xs text-red-500 font-medium">{errors.dateOfBirth.message}</p>
                     ) : isDobInvalid ? (
-                      // 2. Real-time Warning (e.g., user selected 2025)
                       <p className="text-xs text-red-500 font-medium">Age must be between 21 and 60 years</p>
-                    ) : (
-                      // 3. Default Helper Text
-                      <p className="text-xs text-gray-500">Age must be between 21 and 60</p>
-                    )}
+                    ) : null}
                   </div>
                 </div>
 
                 {/* State, City, Pincode (Kept Same) */}
-                <div className="space-y-1 mt-3 relative" ref={stateDropdownRef}>
+                <div className="space-y-1 mt-1 relative" ref={stateDropdownRef}>
                   <input type="hidden" {...register("state")} />
                   <div onClick={() => setIsStateDropdownOpen(!isStateDropdownOpen)} className="relative w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white flex justify-between items-center cursor-pointer">
                       <span className={selectedState ? "text-black" : "text-gray-500"}>{selectedState || "Select State"}</span>
@@ -590,7 +585,7 @@ export default function MultipartForm() {
                   <div className="h-4">{errors.state && <p className="text-xs text-red-500">{errors.state.message}</p>}</div>
                 </div>
 
-                <div className="space-y-1 mt-4">
+                <div className="space-y-1 mt-1">
                   <div className="relative">
                     <input type="text" {...register("city")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter your city" onFocus={() => setCityFocused(true)} onBlur={() => setCityFocused(false)} />
                     <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${cityFocused || !!cityValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>City *</span>
@@ -598,7 +593,7 @@ export default function MultipartForm() {
                   <div className="h-4">{errors.city && <p className="text-xs text-red-500">{errors.city.message}</p>}</div>
                 </div>
 
-                <div className="space-y-1 mt-4">
+                <div className="space-y-1 mt-1">
                   <div className="relative">
                     <input {...register("pincode")} type="text" maxLength={6} onInput={(e) => e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '')} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter 6-digit pincode" onFocus={() => setPincodeFocused(true)} onBlur={() => setPincodeFocused(false)} />
                     <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${pincodeFocused || !!pincodeValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Pincode *</span>
@@ -617,7 +612,7 @@ export default function MultipartForm() {
                 {/* Loan Amount */}
                 <div className="space-y-1">
                   <div className="relative">
-                    <input {...register("loanAmount")} type="text" inputMode="numeric" className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter loan amount (₹3L - ₹3Cr)" onInput={(e) => { const cleaned = e.currentTarget.value.replace(/[^0-9]/g, ""); setValue("loanAmount", cleaned, { shouldValidate: false }); }} onBlur={(e) => { const clamped = clampLoanAmount(e.currentTarget.value); setValue("loanAmount", clamped, { shouldValidate: true }); setLoanAmountFocused(false); }} onFocus={() => setLoanAmountFocused(true)} />
+                    <input {...register("loanAmount")} type="text" inputMode="numeric" className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter loan amount (₹3L - ₹3Cr)" onInput={(e) => { const cleaned = e.currentTarget.value.replace(/[^0-9]/g, ""); setValue("loanAmount", cleaned, { shouldValidate: false }); }} onBlur={(e) => { const clamped = clampLoanAmount(e.currentTarget.value); setValue("loanAmount", clamped, { shouldValidate: false }); setLoanAmountFocused(false); }} onFocus={() => setLoanAmountFocused(true)} />
                     <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${loanAmountFocused || !!loanAmountValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Loan Amount Required *</span>
                   </div>
                   <div className="h-4">{errors.loanAmount && <p className="text-xs text-red-500">{errors.loanAmount.message}</p>}</div>
@@ -690,7 +685,7 @@ export default function MultipartForm() {
           )}
 
           {/* Navigation Buttons */}
-          <div className="pt-1 border-t-2 border-gray-100">
+          <div className="pt-0 border-t-2 border-gray-100">
             {currentStep < totalSteps ? (
               <button type="button" onClick={nextStep} className="w-full px-6 py-3 bg-gradient-to-r from-primary to-secondary-burgundy text-white rounded-lg text-sm font-semibold hover:from-secondary-burgundy transition-all shadow-lg flex items-center justify-center gap-2">
                 Apply Now

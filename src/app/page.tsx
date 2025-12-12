@@ -20,11 +20,11 @@ export default function Home() {
       <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
       <WhatIsBusinessLoan />
       <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
-      <WhyAmbitFinvest />
-      <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
       <div id="eligibility">
         <EligibilityCriteria />
       </div>
+      <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+      <WhyAmbitFinvest />
       <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
       <div id="steps">
         <EasySteps />
