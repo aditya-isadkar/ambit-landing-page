@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Check, User, Briefcase, Loader2, X, ScrollText, ChevronDown } from "lucide-react";
-import SubmissionSuccessModal from "./SubmissionSuccessModal";
 
 // --- CONSTANTS & DATA ---
 
@@ -99,6 +99,7 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 export default function MultipartForm() {
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isAnimating, setIsAnimating] = useState(false);
   const totalSteps = 2;
@@ -143,6 +144,7 @@ export default function MultipartForm() {
     watch,
     setValue,
     trigger,
+    clearErrors,
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     mode: "onSubmit",
@@ -169,11 +171,27 @@ export default function MultipartForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [loanAmountWarning, setLoanAmountWarning] = useState("");
+  const lastLoanAmount = useRef("");
 
   // --- MOUNT EFFECT ---
   useEffect(() => {
       setMounted(true);
   }, []);
+
+  // --- ERROR CLEARING EFFECT ---
+  // This is the FIX: It waits until we actually switch to Step 2, then forcibly wipes errors.
+  useEffect(() => {
+    if (currentStep === 2) {
+      const step2Fields: (keyof FormData)[] = [
+        "loanAmount", "constitution", "ownershipProof", 
+        "yearsInBusiness", "annualTurnover", "gstRegistered",
+        "termsAgreed", "communicationsAgreed"
+      ];
+      clearErrors(step2Fields);
+      setShowTermsModal(false);
+    }
+  }, [currentStep, clearErrors]);
 
   // --- SCROLL LOCK EFFECT ---
   useEffect(() => {
@@ -293,6 +311,7 @@ export default function MultipartForm() {
       if (response.ok && payload.verified) {
         setIsMobileVerified(true);
         setOtpSentMsg(""); 
+        setOtpError("");
       } else {
         if (enteredOtp.length >= 4) {
             setOtpError("Invalid OTP");
@@ -307,15 +326,22 @@ export default function MultipartForm() {
   };
 
   const nextStep = async () => {
-    const step1Fields: (keyof FormData)[] = ["fullName", "email", "mobileNumber", "otp", "dateOfBirth", "state", "city", "pincode"];
+    const step1Fields: (keyof FormData)[] = [
+      "fullName", "email", "mobileNumber", "otp", 
+      "dateOfBirth", "state", "city", "pincode"
+    ];
     
     if (currentStep === 1) {
       if (!isMobileVerified) {
-        alert("Please verify your mobile number with OTP to proceed.");
+        setOtpError("Please verify your mobile number with OTP to proceed.");
         await trigger(step1Fields); 
         return;
       }
+      
+      // We only validate Step 1 fields here.
+      // We DO NOT clear errors here anymore, we let the useEffect handle it.
       const isValid = await trigger(step1Fields);
+      
       if (isValid) {
         setCurrentStep(currentStep + 1);
       }
@@ -362,7 +388,9 @@ export default function MultipartForm() {
         }
         return;
       }
-      setShowSuccessModal(true);
+      setShowTermsModal(false);
+      try { sessionStorage.setItem("thankyou_access", "1"); } catch {}
+      router.push("/thank-you");
     } catch (err) {
       console.error(err);
       setSubmitError("Unexpected error during submission.");
@@ -464,17 +492,17 @@ export default function MultipartForm() {
               return (
                 <div key={step} className="flex items-center flex-1">
                   <div className="flex flex-col items-center justify-center relative z-10 w-full">
-                    <div className={`relative flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all duration-500 ${isActive ? "bg-primary border-primary text-white shadow-md shadow-primary/50" : isCompleted ? "bg-secondary-orange border-secondary-orange text-white" : "bg-white border-gray-300 text-gray-400"}`}>
+                    <div className={`relative flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all duration-500 ${isActive ? "bg-primary border-primary text-white shadow-md shadow-primary/50" : isCompleted ? "bg-green-600 border-green-600 text-white" : "bg-white border-gray-300 text-gray-400"}`}>
                       {isCompleted ? <Check className="w-3 h-3" /> : <Icon className="w-3 h-3" />}
                     </div>
-                    <div className={`mt-1 text-[9px] font-semibold transition-colors text-center ${isActive ? "text-primary" : isCompleted ? "text-secondary-orange" : "text-gray-400"}`}>
+                    <div className={`mt-1 text-[9px] font-semibold transition-colors text-center ${isActive ? "text-primary" : isCompleted ? "text-green-600" : "text-gray-400"}`}>
                       {stepTitles[step - 1]}
                     </div>
                   </div>
                   {step < totalSteps && (
                     <div className="flex-1 h-0.5 mx-3 relative">
                       <div className="absolute inset-0 bg-gray-200 rounded-full overflow-hidden">
-                        <div className={`h-full transition-all duration-1000 ease-out rounded-full ${currentStep > step ? "bg-secondary-orange" : "bg-gray-200"}`} style={{ width: currentStep > step ? "100%" : "0%" }} />
+                        <div className={`h-full transition-all duration-1000 ease-out rounded-full ${currentStep > step ? "bg-green-600" : "bg-gray-200"}`} style={{ width: currentStep > step ? "100%" : "0%" }} />
                       </div>
                     </div>
                   )}
@@ -497,7 +525,7 @@ export default function MultipartForm() {
                 {/* Full Name & Email (Kept same) */}
                 <div className="space-y-1">
                   <div className="relative">
-                    <input {...register("fullName")} type="text" className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter Your full name" onFocus={() => setFullNameFocused(true)} onBlur={() => setFullNameFocused(false)} />
+                    <input {...register("fullName")} type="text" className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter Your full name" onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/[^A-Za-z\\s]/g, ''); }} onFocus={() => setFullNameFocused(true)} onBlur={() => setFullNameFocused(false)} />
                     <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${fullNameFocused || !!fullNameValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Full Name *</span>
                   </div>
                   <div className="h-4">{errors.fullName && <p className="text-xs text-red-500">{errors.fullName.message}</p>}</div>
@@ -505,7 +533,7 @@ export default function MultipartForm() {
 
                 <div className="space-y-1">
                   <div className="relative">
-                    <input {...register("email")} type="email" className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter your email" onFocus={() => setEmailFocused(true)} onBlur={() => setEmailFocused(false)} />
+                    <input {...register("email")} type="email" className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter your email" onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/[0-9]/g, ''); }} onFocus={() => setEmailFocused(true)} onBlur={() => setEmailFocused(false)} />
                     <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${emailFocused || !!emailValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Email address *</span>
                   </div>
                   <div className="h-4">{errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}</div>
@@ -525,6 +553,11 @@ export default function MultipartForm() {
                   <div className="relative">
                     <input {...register("otp")} type="text" maxLength={4} disabled={!otpToken || isMobileVerified} onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, ''); }} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary disabled:bg-gray-50 placeholder-transparent focus:placeholder-gray-500" placeholder="Enter 4-digit OTP" onFocus={() => setOtpFocused(true)} onBlur={() => setOtpFocused(false)} />
                     {isVerifyingOtp && <div className="absolute right-3 top-2.5"><Loader2 className="w-4 h-4 text-primary animate-spin" /></div>}
+                    {!isVerifyingOtp && isMobileVerified && (
+                      <div className="absolute right-3 top-2.5 pointer-events-none bg-white pl-1">
+                        <Check className="w-4 h-4 text-green-600" />
+                      </div>
+                    )}
                     <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${otpFocused || !!enteredOtp ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>OTP *</span>
                   </div>
                   <div className="h-4">{otpError && <p className="text-xs text-red-500">{otpError}</p>}</div>
@@ -587,7 +620,7 @@ export default function MultipartForm() {
 
                 <div className="space-y-1 mt-1">
                   <div className="relative">
-                    <input type="text" {...register("city")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter your city" onFocus={() => setCityFocused(true)} onBlur={() => setCityFocused(false)} />
+                    <input type="text" {...register("city")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter your city" onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/[^A-Za-z\\s]/g, ''); }} onFocus={() => setCityFocused(true)} onBlur={() => setCityFocused(false)} />
                     <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${cityFocused || !!cityValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>City *</span>
                   </div>
                   <div className="h-4">{errors.city && <p className="text-xs text-red-500">{errors.city.message}</p>}</div>
@@ -612,10 +645,10 @@ export default function MultipartForm() {
                 {/* Loan Amount */}
                 <div className="space-y-1">
                   <div className="relative">
-                    <input {...register("loanAmount")} type="text" inputMode="numeric" className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter loan amount (₹3L - ₹3Cr)" onInput={(e) => { const cleaned = e.currentTarget.value.replace(/[^0-9]/g, ""); setValue("loanAmount", cleaned, { shouldValidate: false }); }} onBlur={(e) => { const clamped = clampLoanAmount(e.currentTarget.value); setValue("loanAmount", clamped, { shouldValidate: false }); setLoanAmountFocused(false); }} onFocus={() => setLoanAmountFocused(true)} />
+                    <input {...register("loanAmount")} type="text" inputMode="numeric" className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter loan amount (₹3L - ₹3Cr)" onInput={(e) => { const cleaned = e.currentTarget.value.replace(/[^0-9]/g, ""); if (!cleaned) { setValue("loanAmount", "", { shouldValidate: false }); setLoanAmountWarning(""); lastLoanAmount.current = ""; return; } const n = Number(cleaned); if (n > 30000000) { setLoanAmountWarning("Maximum allowed is ₹3 Cr"); e.currentTarget.value = lastLoanAmount.current; setValue("loanAmount", lastLoanAmount.current, { shouldValidate: false }); return; } setLoanAmountWarning(n < 300000 ? "Minimum allowed is ₹3 Lakh" : ""); setValue("loanAmount", cleaned, { shouldValidate: false }); lastLoanAmount.current = cleaned; }} onBlur={(e) => { const cleaned = e.currentTarget.value.replace(/[^0-9]/g, ""); const n = Number(cleaned || "0"); if (cleaned === "") { setLoanAmountWarning(""); } else if (n > 30000000) { setLoanAmountWarning("Maximum allowed is ₹3 Cr"); e.currentTarget.value = lastLoanAmount.current; setValue("loanAmount", lastLoanAmount.current, { shouldValidate: false }); } else { setLoanAmountWarning(n < 300000 ? "Minimum allowed is ₹3 Lakh" : ""); setValue("loanAmount", cleaned, { shouldValidate: false }); lastLoanAmount.current = cleaned; } setLoanAmountFocused(false); }} onFocus={() => setLoanAmountFocused(true)} />
                     <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${loanAmountFocused || !!loanAmountValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Loan Amount Required *</span>
                   </div>
-                  <div className="h-4">{errors.loanAmount && <p className="text-xs text-red-500">{errors.loanAmount.message}</p>}</div>
+                  <div className="h-4">{errors.loanAmount && <p className="text-xs text-red-500">{errors.loanAmount.message}</p>}{!errors.loanAmount && loanAmountWarning && <p className="text-xs text-red-500">{loanAmountWarning}</p>}</div>
                 </div>
                 {/* Constitution */}
                 <div className="space-y-1">
@@ -700,7 +733,6 @@ export default function MultipartForm() {
             </div>
           </div>
         </form>
-        <SubmissionSuccessModal open={showSuccessModal} onClose={() => setShowSuccessModal(false)} />
       </div>
     </div>
   );

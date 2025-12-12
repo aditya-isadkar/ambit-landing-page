@@ -15,7 +15,7 @@ export default function Hero() {
             src={bannerImage}
             alt="Business Loan Banner"
             fill
-            className="object-cover"
+            className="object-cover object-[40%]"
             priority
           />
         </div>
