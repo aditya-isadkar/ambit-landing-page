@@ -29,7 +29,7 @@ export default function Hero() {
         </div>
 
         {/* Banner Text Content */}
-        <div className="relative z-10 container mx-auto px-4 pt-16">
+        <div className="relative z-10 container mx-auto px-4 pt-7">
           <div className="text-white">
             <h1 className="text-3xl font-bold mb-2 leading-tight">
               Secured Business Loan
