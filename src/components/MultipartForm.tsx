@@ -52,7 +52,17 @@ const stepTitles = ["Personal Details", "Business Details"];
 const calculateAge = (dateString: string) => {
   if (!dateString) return 0;
   const today = new Date();
-  const birthDate = new Date(dateString);
+  
+  // Parse YYYY-MM-DD manually to prevent UTC offset issues
+  const parts = dateString.split("-");
+  if (parts.length !== 3) return 0;
+  
+  const birthDate = new Date(
+    parseInt(parts[0], 10),
+    parseInt(parts[1], 10) - 1,
+    parseInt(parts[2], 10)
+  );
+
   let age = today.getFullYear() - birthDate.getFullYear();
   const m = today.getMonth() - birthDate.getMonth();
   if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
@@ -65,7 +75,7 @@ const calculateAge = (dateString: string) => {
 const formSchema = z.object({
   // Step 1: Personal Information
   fullName: z.string().min(2, "Full Name is required"),
-  email: z.string().email("Invalid email address"),
+  email: z.string().regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, "Invalid email address"),
   mobileNumber: z.string().length(10, "Mobile number must be exactly 10 digits"),
   otp: z.string().min(4, "OTP is required"),
 
@@ -168,6 +178,14 @@ export default function MultipartForm() {
   const ownershipValue = watch("ownershipProof");
   const yearsValue = watch("yearsInBusiness");
   const turnoverValue = watch("annualTurnover");
+  
+  // Extract registration props to properly chain handlers
+  const dobRegister = register("dateOfBirth");
+  const constitutionRegister = register("constitution");
+  const ownershipRegister = register("ownershipProof");
+  const yearsRegister = register("yearsInBusiness");
+  const turnoverRegister = register("annualTurnover");
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -535,7 +553,7 @@ export default function MultipartForm() {
 
                 <div className="space-y-1">
                   <div className="relative">
-                    <input {...register("email")} type="email" className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter your email" onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/[0-9]/g, ''); clearErrors("email"); }} onFocus={() => setEmailFocused(true)} onBlur={() => setEmailFocused(false)} />
+                    <input {...register("email")} type="email" className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter your email" onInput={() => clearErrors("email")} onFocus={() => setEmailFocused(true)} onBlur={() => setEmailFocused(false)} />
                     <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${emailFocused || !!emailValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Email address *</span>
                   </div>
                   <div className="h-4">{errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}</div>
@@ -572,13 +590,19 @@ export default function MultipartForm() {
                 <div className="space-y-1 mt-1">
                   <div className="relative">
                     <input 
-                      {...register("dateOfBirth")} 
+                      {...dobRegister}
                       type="date" 
                       max={new Date().toISOString().split("T")[0]} 
                       className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white placeholder-transparent focus:placeholder-gray-500"
                       onFocus={() => setDobFocused(true)}
-                      onChange={() => { clearErrors("dateOfBirth"); }}
-                      onBlur={() => setDobFocused(false)}
+                      onChange={(e) => {
+                        dobRegister.onChange(e);
+                        clearErrors("dateOfBirth");
+                      }}
+                      onBlur={(e) => {
+                        dobRegister.onBlur(e);
+                        setDobFocused(false);
+                      }}
                     />
                     
                     {/* Icon Logic: Only show Green Check if valid */}
@@ -659,7 +683,19 @@ export default function MultipartForm() {
                 {/* Constitution */}
                 <div className="space-y-1">
                   <div className="relative">
-                    <select {...register("constitution")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white" onChange={() => clearErrors("constitution")} onFocus={() => setConstitutionFocused(true)} onBlur={() => setConstitutionFocused(false)}>
+                    <select 
+                      {...constitutionRegister} 
+                      className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white" 
+                      onChange={(e) => {
+                        constitutionRegister.onChange(e);
+                        clearErrors("constitution");
+                      }}
+                      onBlur={(e) => {
+                        constitutionRegister.onBlur(e);
+                        setConstitutionFocused(false);
+                      }}
+                      onFocus={() => setConstitutionFocused(true)} 
+                    >
                       <option value="">Select Constitution</option>
                       {constitutions.map((c) => <option key={c} value={c}>{c}</option>)}
                     </select>
@@ -670,7 +706,19 @@ export default function MultipartForm() {
                 {/* Ownership */}
                 <div className="space-y-1 mt-4">
                   <div className="relative">
-                    <select {...register("ownershipProof")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white" onChange={() => clearErrors("ownershipProof")} onFocus={() => setOwnershipFocused(true)} onBlur={() => setOwnershipFocused(false)}>
+                    <select 
+                      {...ownershipRegister} 
+                      className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white" 
+                      onChange={(e) => {
+                        ownershipRegister.onChange(e);
+                        clearErrors("ownershipProof");
+                      }}
+                      onBlur={(e) => {
+                        ownershipRegister.onBlur(e);
+                        setOwnershipFocused(false);
+                      }}
+                      onFocus={() => setOwnershipFocused(true)} 
+                    >
                       <option value="">Select Ownership Proof</option>
                       {ownershipProofs.map((p) => <option key={p} value={p}>{p}</option>)}
                     </select>
@@ -681,7 +729,19 @@ export default function MultipartForm() {
                 {/* Years */}
                 <div className="space-y-1 mt-4">
                   <div className="relative">
-                    <select {...register("yearsInBusiness")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white" onChange={() => clearErrors("yearsInBusiness")} onFocus={() => setYearsFocused(true)} onBlur={() => setYearsFocused(false)}>
+                    <select 
+                      {...yearsRegister} 
+                      className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white" 
+                      onChange={(e) => {
+                        yearsRegister.onChange(e);
+                        clearErrors("yearsInBusiness");
+                      }}
+                      onBlur={(e) => {
+                        yearsRegister.onBlur(e);
+                        setYearsFocused(false);
+                      }}
+                      onFocus={() => setYearsFocused(true)} 
+                    >
                       <option value="">Select Years</option>
                       {yearsInBusiness.map((y) => <option key={y} value={y}>{y}</option>)}
                     </select>
@@ -692,7 +752,19 @@ export default function MultipartForm() {
                 {/* Turnover */}
                 <div className="space-y-1 mt-5">
                   <div className="relative">
-                    <select {...register("annualTurnover")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white" onChange={() => clearErrors("annualTurnover")} onFocus={() => setTurnoverFocused(true)} onBlur={() => setTurnoverFocused(false)}>
+                    <select 
+                      {...turnoverRegister} 
+                      className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white" 
+                      onChange={(e) => {
+                        turnoverRegister.onChange(e);
+                        clearErrors("annualTurnover");
+                      }}
+                      onBlur={(e) => {
+                        turnoverRegister.onBlur(e);
+                        setTurnoverFocused(false);
+                      }}
+                      onFocus={() => setTurnoverFocused(true)} 
+                    >
                       <option value="">Select Turnover</option>
                       {annualTurnovers.map((t) => <option key={t} value={t}>{t}</option>)}
                     </select>

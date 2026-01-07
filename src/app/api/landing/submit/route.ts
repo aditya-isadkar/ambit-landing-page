@@ -12,9 +12,8 @@ function normalizePhone(mobile?: string) {
   return mobile.replace(/^\+91/, "").replace(/\D/g, "");
 }
 
-function generateLeadId(mobile: string) {
-  const hash = crypto.createHash("sha256").update(mobile).digest("hex");
-  return `LD-${hash.slice(0, 16)}`;
+function generateRandom6DigitId() {
+  return crypto.randomInt(100000, 1000000).toString();
 }
 
 // This function ensures the Auth URL matches the tenant in the Data URL
@@ -89,7 +88,6 @@ export async function POST(request: Request) {
     }
 
     const { firstName, lastName } = splitName(fullName);
-    const leadId = generateLeadId(normalizedPhone);
 
     const client = await getMongoClient();
     const db = client.db("ambit");
@@ -103,6 +101,16 @@ export async function POST(request: Request) {
         { ok: false, message: "Mobile number already exists", lead_id: existing.lead_id },
         { status: 409 }
       );
+    }
+
+    let leadId = "";
+    let isUnique = false;
+    while (!isUnique) {
+      leadId = generateRandom6DigitId();
+      const existingId = await collection.findOne({ lead_id: leadId });
+      if (!existingId) {
+        isUnique = true;
+      }
     }
 
     const doc = {

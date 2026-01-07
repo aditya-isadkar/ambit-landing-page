@@ -20,12 +20,10 @@ export default function ThankYou() {
     try {
       const allow = sessionStorage.getItem("thankyou_access") === "1";
       if (!allow) {
-        router.replace("/");
-      } else {
-        sessionStorage.removeItem("thankyou_access");
+        // router.replace("/"); // Commenting out redirect for now as per request to avoid instant rollback issues if session is lost
       }
     } catch {
-      router.replace("/");
+      // router.replace("/");
     }
   }, [router]);
 
@@ -47,12 +45,20 @@ export default function ThankYou() {
           <div className="w-48 mx-auto">
             <img src={BackgroundTwo.src} alt="Decorative Image" className="object-contain w-full" />
           </div>
-          <button
-            onClick={handleSaveContact}
-            className="bg-red-600 hover:bg-red-700 text-white font-semibold py-4 px-10 rounded-full text-2xl sm:text-xl transition-transform transform hover:scale-105"
-          >
-            Save Contact
-          </button>
+          <div className="flex flex-col items-center gap-4">
+            <button
+              onClick={handleSaveContact}
+              className="bg-red-600 hover:bg-red-700 text-white font-semibold py-4 px-10 rounded-full text-2xl sm:text-xl transition-transform transform hover:scale-105"
+            >
+              Save Contact
+            </button>
+            <button
+              onClick={() => router.push("/")}
+              className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 px-8 rounded-full text-lg transition-transform transform hover:scale-105 border-2 border-gray-300"
+            >
+              Back to Home
+            </button>
+          </div>
         </div>
 
       </div>
