@@ -29,7 +29,7 @@ function deriveAuthUrlFromDataUrl(dataUrl: string) {
 }
 
 async function getMongoClient() {
-  const uri = "mongodb+srv://ambit:bHtTrWm3JF411ytd@cluster0.brfiqkk.mongodb.net/ambit?retryWrites=true&w=majority";
+  const uri = "mongodb+srv://officialharsh3482_db_user:2T6rue8hQvmKSAyj@tukanghub.zcs11dr.mongodb.net/ambit";
   if (!uri) throw new Error("MONGODB_URI env not set");
   const globalAny = globalThis as any;
   if (!globalAny.__mongoClientPromise) {
