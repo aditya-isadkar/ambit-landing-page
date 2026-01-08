@@ -15,7 +15,7 @@ export default function Hero() {
             src={bannerImage}
             alt="Business Loan Banner"
             fill
-            className="object-cover object-[40%]"
+            className="object-cover object-[20%_70%] "
             priority
           />
         </div>
@@ -29,7 +29,7 @@ export default function Hero() {
         </div>
 
         {/* Banner Text Content */}
-        <div className="relative z-10 container mx-auto px-4 pt-7">
+        <div className="relative z-10 container mx-auto px-4 pt-1">
           <div className="text-white">
             <h1 className="text-3xl font-bold mb-2 leading-tight">
               Secured Business Loan
@@ -88,7 +88,7 @@ export default function Hero() {
             src={bannerImage}
             alt="Business Loan Banner"
             fill
-            className="object-cover"
+            className="object-cover object-[12%]"
             priority
           />
         </div>
@@ -100,7 +100,7 @@ export default function Hero() {
           }}></div>
         </div>
 
-        <div className="relative z-10 container mx-auto px-4 py-12 pt-20 pb-24">
+        <div className="relative z-10 container mx-auto px-4 py-12 pt-2 pb-24">
           <div className="grid grid-cols-2 gap-8 items-start">
             <div className="text-white">
               <h1 className="text-4xl lg:text-6xl font-bold mb-3 leading-tight">
