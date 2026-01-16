@@ -36,7 +36,7 @@ I/We hereby agree that the rate of interest is in accordance with Interest Rate 
 
 // List sorted alphabetically
 const rawStates = [
-"Andaman and Nicobar Island", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chandigarh", "Chhattisgarh", "Daman and Diu", "Delhi NCR", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Lakshadweep", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Puducherry", "Punjab", "Rajasthan", "Sikkim", "Tamilnadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttrakhand", "West Bengal"
+  "Andaman and Nicobar Island", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chandigarh", "Chhattisgarh", "Daman and Diu", "Delhi NCR", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Lakshadweep", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Puducherry", "Punjab", "Rajasthan", "Sikkim", "Tamilnadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttrakhand", "West Bengal"
 ];
 const states = rawStates.sort();
 
@@ -52,11 +52,11 @@ const stepTitles = ["Personal Details", "Business Details"];
 const calculateAge = (dateString: string) => {
   if (!dateString) return 0;
   const today = new Date();
-  
+
   // Parse YYYY-MM-DD manually to prevent UTC offset issues
   const parts = dateString.split("-");
   if (parts.length !== 3) return 0;
-  
+
   const birthDate = new Date(
     parseInt(parts[0], 10),
     parseInt(parts[1], 10) - 1,
@@ -128,11 +128,11 @@ export default function MultipartForm() {
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [isMobileVerified, setIsMobileVerified] = useState(false);
-  const [otpError, setOtpError] = useState(""); 
+  const [otpError, setOtpError] = useState("");
   const [otpSentMsg, setOtpSentMsg] = useState("");
-  const lastSentMobile = useRef(""); 
-  const context = "secured_business_loan"; 
-  
+  const lastSentMobile = useRef("");
+  const context = "secured_business_loan";
+
   // Focus States
   const [fullNameFocused, setFullNameFocused] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
@@ -158,7 +158,7 @@ export default function MultipartForm() {
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     mode: "onSubmit",
-    reValidateMode: "onChange", 
+    reValidateMode: "onChange",
     defaultValues: {
       termsAgreed: true,
       communicationsAgreed: true
@@ -178,7 +178,7 @@ export default function MultipartForm() {
   const ownershipValue = watch("ownershipProof");
   const yearsValue = watch("yearsInBusiness");
   const turnoverValue = watch("annualTurnover");
-  
+
   // Extract registration props to properly chain handlers
   const dobRegister = register("dateOfBirth");
   const constitutionRegister = register("constitution");
@@ -194,7 +194,7 @@ export default function MultipartForm() {
 
   // --- MOUNT EFFECT ---
   useEffect(() => {
-      setMounted(true);
+    setMounted(true);
   }, []);
 
   // --- ERROR CLEARING EFFECT ---
@@ -202,7 +202,7 @@ export default function MultipartForm() {
   useEffect(() => {
     if (currentStep === 2) {
       const step2Fields: (keyof FormData)[] = [
-        "loanAmount", "constitution", "ownershipProof", 
+        "loanAmount", "constitution", "ownershipProof",
         "yearsInBusiness", "annualTurnover", "gstRegistered",
         "termsAgreed", "communicationsAgreed"
       ];
@@ -213,12 +213,12 @@ export default function MultipartForm() {
 
   // --- SCROLL LOCK EFFECT ---
   useEffect(() => {
-      if (showTermsModal) {
-          document.body.style.overflow = "hidden";
-      } else {
-          document.body.style.overflow = "unset";
-      }
-      return () => { document.body.style.overflow = "unset"; };
+    if (showTermsModal) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => { document.body.style.overflow = "unset"; };
   }, [showTermsModal]);
 
   useEffect(() => {
@@ -247,21 +247,21 @@ export default function MultipartForm() {
 
   useEffect(() => {
     if (mobileNumber && mobileNumber.length !== 10) {
-        setIsMobileVerified(false);
-        setOtpToken(null);
-        setOtpError("");
-        setOtpSentMsg("");
-        lastSentMobile.current = "";
+      setIsMobileVerified(false);
+      setOtpToken(null);
+      setOtpError("");
+      setOtpSentMsg("");
+      lastSentMobile.current = "";
     }
   }, [mobileNumber]);
 
   useEffect(() => {
     const cleanMobile = mobileNumber?.replace(/\D/g, "");
     if (
-      cleanMobile?.length === 10 && 
-      !isMobileVerified && 
-      !isSendingOtp && 
-      !otpToken && 
+      cleanMobile?.length === 10 &&
+      !isMobileVerified &&
+      !isSendingOtp &&
+      !otpToken &&
       lastSentMobile.current !== cleanMobile
     ) {
       const timer = setTimeout(() => {
@@ -298,7 +298,7 @@ export default function MultipartForm() {
       setOtpToken(payload.token);
       setOtpCountdown(payload.cooldown ?? 60);
       setOtpSentMsg("OTP sent successfully");
-      lastSentMobile.current = mobile; 
+      lastSentMobile.current = mobile;
     } catch (error) {
       console.error(error);
       setOtpError("Error sending OTP");
@@ -328,11 +328,11 @@ export default function MultipartForm() {
 
       if (response.ok && payload.verified) {
         setIsMobileVerified(true);
-        setOtpSentMsg(""); 
+        setOtpSentMsg("");
         setOtpError("");
       } else {
         if (enteredOtp.length >= 4) {
-            setOtpError("Invalid OTP");
+          setOtpError("Invalid OTP");
         }
       }
     } catch (error) {
@@ -345,22 +345,24 @@ export default function MultipartForm() {
 
   const nextStep = async () => {
     const step1Fields: (keyof FormData)[] = [
-      "fullName", "email", "mobileNumber", "otp", 
+      "fullName", "email", "mobileNumber", "otp",
       "dateOfBirth", "state", "city", "pincode"
     ];
-    
+
     if (currentStep === 1) {
       if (!isMobileVerified) {
         setOtpError("Enter OTP to proceed.");
-        await trigger(step1Fields); 
+        await trigger(step1Fields);
         return;
       }
-      
+
       // We only validate Step 1 fields here.
-      // We DO NOT clear errors here anymore, we let the useEffect handle it.
       const isValid = await trigger(step1Fields);
-      
+
       if (isValid) {
+        // Clear any residual errors (e.g. from previous attempts or accidental submits) 
+        // before showing Step 2 to ensure a clean state.
+        clearErrors();
         setCurrentStep(currentStep + 1);
       }
     }
@@ -407,7 +409,7 @@ export default function MultipartForm() {
         return;
       }
       setShowTermsModal(false);
-      try { sessionStorage.setItem("thankyou_access", "1"); } catch {}
+      try { sessionStorage.setItem("thankyou_access", "1"); } catch { }
       router.push("/thank-you");
     } catch (err) {
       console.error(err);
@@ -426,39 +428,39 @@ export default function MultipartForm() {
 
   // Reusable Consent Section Component
   const ConsentSection = () => (
-      <div className="md:col-span-2 space-y-2 mt-2">
-          <div className="flex items-start gap-2">
-              <input 
-                  id="termsAgreed"
-                  type="checkbox" 
-                  {...register("termsAgreed")} 
-                  onChange={() => clearErrors("termsAgreed")}
-                  className="mt-1 w-4 h-4 shrink-0 text-primary rounded border-gray-300 focus:ring-primary"
-              />
-              <label htmlFor="termsAgreed" className="text-xs text-gray-600 leading-tight">
-                  I agree to <button type="button" onClick={() => setShowTermsModal(true)} className="text-primary font-semibold hover:underline">Terms and Conditions</button> and authorize Ambit Finvest to contact me.
-              </label>
-          </div>
-          <div className="h-4">
-              {errors.termsAgreed && <p className="text-xs text-red-500 pl-6">{errors.termsAgreed.message}</p>}
-          </div>
-
-          <div className="flex items-start gap-2">
-              <input 
-                  id="communicationsAgreed"
-                  type="checkbox" 
-                  {...register("communicationsAgreed")} 
-                  onChange={() => clearErrors("communicationsAgreed")}
-                  className="mt-1 w-4 h-4 shrink-0 text-primary rounded border-gray-300 focus:ring-primary"
-              />
-              <label htmlFor="communicationsAgreed" className="text-xs text-gray-600 leading-tight">
-                  I agree to receive communications and authorize Ambit Finvest to contact me through SMS, Mail and WhatsApp.
-              </label>
-          </div>
-          <div className="h-4">
-              {errors.communicationsAgreed && <p className="text-xs text-red-500 pl-6">{errors.communicationsAgreed.message}</p>}
-          </div>
+    <div className="md:col-span-2 space-y-2 mt-2">
+      <div className="flex items-start gap-2">
+        <input
+          id="termsAgreed"
+          type="checkbox"
+          {...register("termsAgreed")}
+          onChange={() => clearErrors("termsAgreed")}
+          className="mt-1 w-4 h-4 shrink-0 text-primary rounded border-gray-300 focus:ring-primary"
+        />
+        <label htmlFor="termsAgreed" className="text-xs text-gray-600 leading-tight">
+          I agree to <button type="button" onClick={() => setShowTermsModal(true)} className="text-primary font-semibold hover:underline">Terms and Conditions</button> and authorize Ambit Finvest to contact me.
+        </label>
       </div>
+      <div className="h-4">
+        {errors.termsAgreed && <p className="text-xs text-red-500 pl-6">{errors.termsAgreed.message}</p>}
+      </div>
+
+      <div className="flex items-start gap-2">
+        <input
+          id="communicationsAgreed"
+          type="checkbox"
+          {...register("communicationsAgreed")}
+          onChange={() => clearErrors("communicationsAgreed")}
+          className="mt-1 w-4 h-4 shrink-0 text-primary rounded border-gray-300 focus:ring-primary"
+        />
+        <label htmlFor="communicationsAgreed" className="text-xs text-gray-600 leading-tight">
+          I agree to receive communications and authorize Ambit Finvest to contact me through SMS, Mail and WhatsApp.
+        </label>
+      </div>
+      <div className="h-4">
+        {errors.communicationsAgreed && <p className="text-xs text-red-500 pl-6">{errors.communicationsAgreed.message}</p>}
+      </div>
+    </div>
   );
 
   // --- REAL-TIME AGE VALIDATION LOGIC ---
@@ -469,26 +471,26 @@ export default function MultipartForm() {
 
   return (
     <div className="w-full max-w-4xl mx-auto bg-white rounded-xl md:rounded-2xl shadow-xl overflow-hidden border border-gray-100 relative">
-      
+
       {/* --- TERMS MODAL --- */}
       {showTermsModal && mounted && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[70vh] flex flex-col relative animate-scaleIn">
             <div className="p-4 border-b flex items-center justify-between bg-gray-50 rounded-t-xl">
-                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                    <ScrollText className="w-5 h-5 text-primary"/> Terms and Conditions
-                </h3>
-                <button onClick={() => setShowTermsModal(false)} className="p-1 hover:bg-gray-200 rounded-full transition-colors">
-                    <X className="w-5 h-5 text-gray-500" />
-                </button>
+              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <ScrollText className="w-5 h-5 text-primary" /> Terms and Conditions
+              </h3>
+              <button onClick={() => setShowTermsModal(false)} className="p-1 hover:bg-gray-200 rounded-full transition-colors">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
             </div>
             <div className="p-6 overflow-y-auto text-xs md:text-sm text-gray-600 leading-relaxed text-justify whitespace-pre-wrap">
-                {TERMS_TEXT}
+              {TERMS_TEXT}
             </div>
             <div className="p-4 border-t bg-gray-50 rounded-b-xl flex justify-end">
-                <button onClick={() => setShowTermsModal(false)} className="px-6 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors">
-                    I Understand
-                </button>
+              <button onClick={() => setShowTermsModal(false)} className="px-6 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors">
+                I Understand
+              </button>
             </div>
           </div>
         </div>,
@@ -536,12 +538,12 @@ export default function MultipartForm() {
       {/* Form Content */}
       <div className="p-3 md:p-5">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 md:space-y-4">
-          
+
           {/* Step 1: Personal Details */}
           {currentStep === 1 && (
             <div className={`space-y-1 ${isAnimating ? "animate-slideIn" : ""}`}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-1">
-                
+
                 {/* Full Name & Email (Kept same) */}
                 <div className="space-y-1">
                   <div className="relative">
@@ -589,10 +591,10 @@ export default function MultipartForm() {
                 {/* --- DATE OF BIRTH SECTION --- */}
                 <div className="space-y-1 mt-1">
                   <div className="relative">
-                    <input 
+                    <input
                       {...dobRegister}
-                      type="date" 
-                      max={new Date().toISOString().split("T")[0]} 
+                      type="date"
+                      max={new Date().toISOString().split("T")[0]}
                       className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white placeholder-transparent focus:placeholder-gray-500"
                       onFocus={() => setDobFocused(true)}
                       onChange={(e) => {
@@ -604,12 +606,12 @@ export default function MultipartForm() {
                         setDobFocused(false);
                       }}
                     />
-                    
+
                     {/* Icon Logic: Only show Green Check if valid */}
                     {isDobValid && (
-                        <div className="absolute right-10 top-2.5 pointer-events-none bg-white pl-1">
-                            <Check className="w-4 h-4 text-green-600 animate-scaleIn" />
-                        </div>
+                      <div className="absolute right-10 top-2.5 pointer-events-none bg-white pl-1">
+                        <Check className="w-4 h-4 text-green-600 animate-scaleIn" />
+                      </div>
                     )}
 
                     <span
@@ -617,7 +619,7 @@ export default function MultipartForm() {
                     >
                       Date of birth *
                     </span>
-                    
+
                   </div>
                   <div className="h-4">
                     {errors.dateOfBirth ? (
@@ -632,18 +634,18 @@ export default function MultipartForm() {
                 <div className="space-y-1 mt-1 relative" ref={stateDropdownRef}>
                   <input type="hidden" {...register("state")} />
                   <div onClick={() => setIsStateDropdownOpen(!isStateDropdownOpen)} className="relative w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white flex justify-between items-center cursor-pointer">
-                      <span className={selectedState ? "text-black" : "text-gray-500"}>{selectedState || "Select State"}</span>
-                      <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isStateDropdownOpen ? 'rotate-180' : ''}`} />
-                      <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${isStateDropdownOpen || !!selectedState ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Select State *</span>
+                    <span className={selectedState ? "text-black" : "text-gray-500"}>{selectedState || "Select State"}</span>
+                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isStateDropdownOpen ? 'rotate-180' : ''}`} />
+                    <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${isStateDropdownOpen || !!selectedState ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Select State *</span>
                   </div>
                   {isStateDropdownOpen && (
-                      <ul className="absolute z-50 left-0 right-0 mt-1 bg-white border-2 border-gray-100 rounded-lg shadow-xl max-h-40 overflow-y-auto">
-                          {states.map((state) => (
-                              <li key={state} onClick={() => { setValue("state", state, { shouldValidate: true }); clearErrors("state"); setValue("city", ""); setIsStateDropdownOpen(false); }} className="px-3 py-2 text-sm hover:bg-gray-50 hover:text-primary cursor-pointer transition-colors">
-                                  {state}
-                              </li>
-                          ))}
-                      </ul>
+                    <ul className="absolute z-50 left-0 right-0 mt-1 bg-white border-2 border-gray-100 rounded-lg shadow-xl max-h-40 overflow-y-auto">
+                      {states.map((state) => (
+                        <li key={state} onClick={() => { setValue("state", state, { shouldValidate: true }); clearErrors("state"); setValue("city", ""); setIsStateDropdownOpen(false); }} className="px-3 py-2 text-sm hover:bg-gray-50 hover:text-primary cursor-pointer transition-colors">
+                          {state}
+                        </li>
+                      ))}
+                    </ul>
                   )}
                   <div className="h-4">{errors.state && <p className="text-xs text-red-500">{errors.state.message}</p>}</div>
                 </div>
@@ -663,7 +665,7 @@ export default function MultipartForm() {
                   </div>
                   <div className="h-4">{errors.pincode && <p className="text-xs text-red-500">{errors.pincode.message}</p>}</div>
                 </div>
-                
+
               </div>
             </div>
           )}
@@ -683,9 +685,9 @@ export default function MultipartForm() {
                 {/* Constitution */}
                 <div className="space-y-1">
                   <div className="relative">
-                    <select 
-                      {...constitutionRegister} 
-                      className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white" 
+                    <select
+                      {...constitutionRegister}
+                      className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white"
                       onChange={(e) => {
                         constitutionRegister.onChange(e);
                         clearErrors("constitution");
@@ -694,7 +696,7 @@ export default function MultipartForm() {
                         constitutionRegister.onBlur(e);
                         setConstitutionFocused(false);
                       }}
-                      onFocus={() => setConstitutionFocused(true)} 
+                      onFocus={() => setConstitutionFocused(true)}
                     >
                       <option value="">Select Constitution</option>
                       {constitutions.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -706,9 +708,9 @@ export default function MultipartForm() {
                 {/* Ownership */}
                 <div className="space-y-1 mt-4">
                   <div className="relative">
-                    <select 
-                      {...ownershipRegister} 
-                      className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white" 
+                    <select
+                      {...ownershipRegister}
+                      className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white"
                       onChange={(e) => {
                         ownershipRegister.onChange(e);
                         clearErrors("ownershipProof");
@@ -717,7 +719,7 @@ export default function MultipartForm() {
                         ownershipRegister.onBlur(e);
                         setOwnershipFocused(false);
                       }}
-                      onFocus={() => setOwnershipFocused(true)} 
+                      onFocus={() => setOwnershipFocused(true)}
                     >
                       <option value="">Select Ownership Proof</option>
                       {ownershipProofs.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -729,9 +731,9 @@ export default function MultipartForm() {
                 {/* Years */}
                 <div className="space-y-1 mt-4">
                   <div className="relative">
-                    <select 
-                      {...yearsRegister} 
-                      className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white" 
+                    <select
+                      {...yearsRegister}
+                      className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white"
                       onChange={(e) => {
                         yearsRegister.onChange(e);
                         clearErrors("yearsInBusiness");
@@ -740,7 +742,7 @@ export default function MultipartForm() {
                         yearsRegister.onBlur(e);
                         setYearsFocused(false);
                       }}
-                      onFocus={() => setYearsFocused(true)} 
+                      onFocus={() => setYearsFocused(true)}
                     >
                       <option value="">Select Years</option>
                       {yearsInBusiness.map((y) => <option key={y} value={y}>{y}</option>)}
@@ -752,9 +754,9 @@ export default function MultipartForm() {
                 {/* Turnover */}
                 <div className="space-y-1 mt-5">
                   <div className="relative">
-                    <select 
-                      {...turnoverRegister} 
-                      className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white" 
+                    <select
+                      {...turnoverRegister}
+                      className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white"
                       onChange={(e) => {
                         turnoverRegister.onChange(e);
                         clearErrors("annualTurnover");
@@ -763,7 +765,7 @@ export default function MultipartForm() {
                         turnoverRegister.onBlur(e);
                         setTurnoverFocused(false);
                       }}
-                      onFocus={() => setTurnoverFocused(true)} 
+                      onFocus={() => setTurnoverFocused(true)}
                     >
                       <option value="">Select Turnover</option>
                       {annualTurnovers.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -798,7 +800,7 @@ export default function MultipartForm() {
           {/* Navigation Buttons */}
           <div className="pt-0 border-t-2 border-gray-100">
             {currentStep < totalSteps ? (
-              <button type="button" onClick={nextStep} className="w-full px-6 py-3 bg-gradient-to-r from-primary to-secondary-burgundy text-white rounded-lg text-sm font-semibold hover:from-secondary-burgundy transition-all shadow-lg flex items-center justify-center gap-2">
+              <button type="button" onClick={(e) => { e.preventDefault(); nextStep(); }} className="w-full px-6 py-3 bg-gradient-to-r from-primary to-secondary-burgundy text-white rounded-lg text-sm font-semibold hover:from-secondary-burgundy transition-all shadow-lg flex items-center justify-center gap-2">
                 Apply Now
               </button>
             ) : (
