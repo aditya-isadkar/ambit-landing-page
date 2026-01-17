@@ -42,11 +42,8 @@ const states = rawStates.sort();
 
 const constitutions = ["Private Limited", "Limited Liability Partnership", "Partnership", "Sole Proprietorship"];
 const ownershipProofs = ["Property Papers", "Rent Agreement", "Lease Agreement"];
-const yearsInBusiness = ["1-2 years", "3-5 years", "5-10 years", "10+ years"];
-const annualTurnovers = ["< 10 Lakhs", "10-50 Lakhs", "50 Lakhs - 1 Cr", "1-5 Cr", "5+ Cr"];
-
-const stepIcons = [User, Briefcase];
-const stepTitles = ["Personal Details", "Business Details"];
+const stepIcons: any[] = [];
+const stepTitles: string[] = [];
 
 // --- HELPER FUNCTION FOR DYNAMIC AGE ---
 const calculateAge = (dateString: string) => {
@@ -93,8 +90,14 @@ const formSchema = z.object({
   loanAmount: z.string().min(1, "Loan amount is required"),
   constitution: z.string().min(1, "Constitution is required"),
   ownershipProof: z.string().min(1, "Ownership proof is required"),
-  yearsInBusiness: z.string().min(1, "Years in business is required"),
-  annualTurnover: z.string().min(1, "Annual turnover is required"),
+  yearsInBusiness: z.string().min(1, "Vintage is required").refine((val) => {
+    const n = parseInt(val);
+    return !isNaN(n) && n <= 100;
+  }, { message: "Vintage cannot be more than 100 years" }),
+  annualTurnover: z.string().min(1, "Turnover is required").refine((val) => {
+    const n = parseInt(val.replace(/[^0-9]/g, ""));
+    return !isNaN(n) && n > 500000;
+  }, { message: "Turnover must be more than 5,00,000" }),
   gstRegistered: z.enum(["yes", "no"], { message: "Please select an option" }),
 
   // Consent Checkboxes
@@ -110,9 +113,7 @@ type FormData = z.infer<typeof formSchema>;
 
 export default function MultipartForm() {
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState(1);
   const [isAnimating, setIsAnimating] = useState(false);
-  const totalSteps = 2;
 
   // Modal State
   const [showTermsModal, setShowTermsModal] = useState(false);
@@ -199,17 +200,7 @@ export default function MultipartForm() {
 
   // --- ERROR CLEARING EFFECT ---
   // This is the FIX: It waits until we actually switch to Step 2, then forcibly wipes errors.
-  useEffect(() => {
-    if (currentStep === 2) {
-      const step2Fields: (keyof FormData)[] = [
-        "loanAmount", "constitution", "ownershipProof",
-        "yearsInBusiness", "annualTurnover", "gstRegistered",
-        "termsAgreed", "communicationsAgreed"
-      ];
-      clearErrors(step2Fields);
-      setShowTermsModal(false);
-    }
-  }, [currentStep, clearErrors]);
+
 
   // --- SCROLL LOCK EFFECT ---
   useEffect(() => {
@@ -221,11 +212,7 @@ export default function MultipartForm() {
     return () => { document.body.style.overflow = "unset"; };
   }, [showTermsModal]);
 
-  useEffect(() => {
-    setIsAnimating(true);
-    const timer = setTimeout(() => setIsAnimating(false), 500);
-    return () => clearTimeout(timer);
-  }, [currentStep]);
+
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -343,30 +330,7 @@ export default function MultipartForm() {
     }
   };
 
-  const nextStep = async () => {
-    const step1Fields: (keyof FormData)[] = [
-      "fullName", "email", "mobileNumber", "otp",
-      "dateOfBirth", "state", "city", "pincode"
-    ];
 
-    if (currentStep === 1) {
-      if (!isMobileVerified) {
-        setOtpError("Enter OTP to proceed.");
-        await trigger(step1Fields);
-        return;
-      }
-
-      // We only validate Step 1 fields here.
-      const isValid = await trigger(step1Fields);
-
-      if (isValid) {
-        // Clear any residual errors (e.g. from previous attempts or accidental submits) 
-        // before showing Step 2 to ensure a clean state.
-        clearErrors();
-        setCurrentStep(currentStep + 1);
-      }
-    }
-  };
 
   const onSubmit = async (data: FormData) => {
     if (!isMobileVerified) {
@@ -504,310 +468,271 @@ export default function MultipartForm() {
         </h2>
       </div>
 
-      <div className="bg-gradient-to-r from-primary-50 to-primary-100 px-4 py-2 border-b border-primary-200">
-        <div className="flex items-center justify-center">
-          <div className="flex items-center w-full max-w-xl px-2">
-            {[1, 2].map((step) => {
-              const Icon = stepIcons[step - 1];
-              const isActive = currentStep === step;
-              const isCompleted = currentStep > step;
-              return (
-                <div key={step} className="flex items-center flex-1">
-                  <div className="flex flex-col items-center justify-center relative z-10 w-full">
-                    <div className={`relative flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all duration-500 ${isActive ? "bg-primary border-primary text-white shadow-md shadow-primary/50" : isCompleted ? "bg-green-600 border-green-600 text-white" : "bg-white border-gray-300 text-gray-400"}`}>
-                      {isCompleted ? <Check className="w-3 h-3" /> : <Icon className="w-3 h-3" />}
-                    </div>
-                    <div className={`mt-1 text-[9px] font-semibold transition-colors text-center ${isActive ? "text-primary" : isCompleted ? "text-green-600" : "text-gray-400"}`}>
-                      {stepTitles[step - 1]}
-                    </div>
-                  </div>
-                  {step < totalSteps && (
-                    <div className="flex-1 h-0.5 mx-3 relative">
-                      <div className="absolute inset-0 bg-gray-200 rounded-full overflow-hidden">
-                        <div className={`h-full transition-all duration-1000 ease-out rounded-full ${currentStep > step ? "bg-green-600" : "bg-gray-200"}`} style={{ width: currentStep > step ? "100%" : "0%" }} />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+
 
       {/* Form Content */}
       <div className="p-3 md:p-5">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 md:space-y-4">
 
           {/* Step 1: Personal Details */}
-          {currentStep === 1 && (
-            <div className={`space-y-1 ${isAnimating ? "animate-slideIn" : ""}`}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-1">
+          <div className="space-y-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-1">
 
-                {/* Full Name & Email (Kept same) */}
-                <div className="space-y-1">
-                  <div className="relative">
-                    <input {...register("fullName")} type="text" className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter Your full name" onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/[^A-Za-z\s]/g, ''); clearErrors("fullName"); }} onFocus={() => setFullNameFocused(true)} onBlur={() => setFullNameFocused(false)} />
-                    <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${fullNameFocused || !!fullNameValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Full Name *</span>
-                  </div>
-                  <div className="h-4">{errors.fullName && <p className="text-xs text-red-500">{errors.fullName.message}</p>}</div>
+              {/* Full Name & Email (Kept same) */}
+              <div className="space-y-1">
+                <div className="relative">
+                  <input {...register("fullName")} type="text" className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter Your full name" onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/[^A-Za-z\s]/g, ''); clearErrors("fullName"); }} onFocus={() => setFullNameFocused(true)} onBlur={() => setFullNameFocused(false)} />
+                  <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${fullNameFocused || !!fullNameValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Full Name *</span>
                 </div>
-
-                <div className="space-y-1">
-                  <div className="relative">
-                    <input {...register("email")} type="email" className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter your email" onInput={() => clearErrors("email")} onFocus={() => setEmailFocused(true)} onBlur={() => setEmailFocused(false)} />
-                    <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${emailFocused || !!emailValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Email address *</span>
-                  </div>
-                  <div className="h-4">{errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}</div>
-                </div>
-
-                {/* Mobile & OTP (Kept same) */}
-                <div className="space-y-1">
-                  <div className="relative">
-                    <input {...register("mobileNumber")} type="tel" disabled={isMobileVerified} onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, ''); if (e.currentTarget.value.length > 10) e.currentTarget.value = e.currentTarget.value.slice(0, 10); clearErrors("mobileNumber"); }} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary disabled:bg-gray-50 placeholder-transparent focus:placeholder-gray-500" placeholder="Enter mobile number" onFocus={() => setMobileFocused(true)} onBlur={() => setMobileFocused(false)} />
-                    {isSendingOtp && <div className="absolute right-3 top-2.5"><Loader2 className="w-4 h-4 text-primary animate-spin" /></div>}
-                    <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${mobileFocused || !!mobileNumber ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Mobile Number *</span>
-                  </div>
-                  <div className="h-4">
-                    {errors.mobileNumber && <p className="text-xs text-red-500">{errors.mobileNumber.message}</p>}
-                    {!errors.mobileNumber && otpSentMsg && !isMobileVerified && <p className="text-xs text-green-600">{otpSentMsg}</p>}
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="relative">
-                    <input {...register("otp")} type="text" maxLength={4} disabled={!otpToken || isMobileVerified} onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, ''); setOtpError(""); clearErrors("otp"); }} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary disabled:bg-gray-50 placeholder-transparent focus:placeholder-gray-500" placeholder="Enter 4-digit OTP" onFocus={() => setOtpFocused(true)} onBlur={() => setOtpFocused(false)} />
-                    {isVerifyingOtp && <div className="absolute right-3 top-2.5"><Loader2 className="w-4 h-4 text-primary animate-spin" /></div>}
-                    {!isVerifyingOtp && isMobileVerified && (
-                      <div className="absolute right-3 top-2.5 pointer-events-none bg-white pl-1">
-                        <Check className="w-4 h-4 text-green-600" />
-                      </div>
-                    )}
-                    <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${otpFocused || !!enteredOtp ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>OTP *</span>
-                  </div>
-                  <div className="h-4">{otpError && <p className="text-xs text-red-500">{otpError}</p>}</div>
-                </div>
-
-                {/* --- DATE OF BIRTH SECTION --- */}
-                <div className="space-y-1 mt-1">
-                  <div className="relative">
-                    <input
-                      {...dobRegister}
-                      type="date"
-                      max={new Date().toISOString().split("T")[0]}
-                      className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white placeholder-transparent focus:placeholder-gray-500"
-                      onFocus={() => setDobFocused(true)}
-                      onChange={(e) => {
-                        dobRegister.onChange(e);
-                        clearErrors("dateOfBirth");
-                      }}
-                      onBlur={(e) => {
-                        dobRegister.onBlur(e);
-                        setDobFocused(false);
-                      }}
-                    />
-
-                    {/* Icon Logic: Only show Green Check if valid */}
-                    {isDobValid && (
-                      <div className="absolute right-10 top-2.5 pointer-events-none bg-white pl-1">
-                        <Check className="w-4 h-4 text-green-600 animate-scaleIn" />
-                      </div>
-                    )}
-
-                    <span
-                      className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${dobFocused || !!dobValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-3 text-sm text-gray-700"}`}
-                    >
-                      Date of birth *
-                    </span>
-
-                  </div>
-                  <div className="h-4">
-                    {errors.dateOfBirth ? (
-                      <p className="text-xs text-red-500">{errors.dateOfBirth.message}</p>
-                    ) : isDobInvalid ? (
-                      <p className="text-xs text-red-500">Age must be between 21 and 60 years</p>
-                    ) : null}
-                  </div>
-                </div>
-
-                {/* State, City, Pincode (Kept Same) */}
-                <div className="space-y-1 mt-1 relative" ref={stateDropdownRef}>
-                  <input type="hidden" {...register("state")} />
-                  <div onClick={() => setIsStateDropdownOpen(!isStateDropdownOpen)} className="relative w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white flex justify-between items-center cursor-pointer">
-                    <span className={selectedState ? "text-black" : "text-gray-500"}>{selectedState || "Select State"}</span>
-                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isStateDropdownOpen ? 'rotate-180' : ''}`} />
-                    <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${isStateDropdownOpen || !!selectedState ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Select State *</span>
-                  </div>
-                  {isStateDropdownOpen && (
-                    <ul className="absolute z-50 left-0 right-0 mt-1 bg-white border-2 border-gray-100 rounded-lg shadow-xl max-h-40 overflow-y-auto">
-                      {states.map((state) => (
-                        <li key={state} onClick={() => { setValue("state", state, { shouldValidate: true }); clearErrors("state"); setValue("city", ""); setIsStateDropdownOpen(false); }} className="px-3 py-2 text-sm hover:bg-gray-50 hover:text-primary cursor-pointer transition-colors">
-                          {state}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  <div className="h-4">{errors.state && <p className="text-xs text-red-500">{errors.state.message}</p>}</div>
-                </div>
-
-                <div className="space-y-1 mt-1">
-                  <div className="relative">
-                    <input type="text" {...register("city")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter your city" onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/[^A-Za-z\s]/g, ''); clearErrors("city"); }} onFocus={() => setCityFocused(true)} onBlur={() => setCityFocused(false)} />
-                    <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${cityFocused || !!cityValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>City *</span>
-                  </div>
-                  <div className="h-4">{errors.city && <p className="text-xs text-red-500">{errors.city.message}</p>}</div>
-                </div>
-
-                <div className="space-y-1 mt-1">
-                  <div className="relative">
-                    <input {...register("pincode")} type="text" maxLength={6} onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, ''); clearErrors("pincode"); }} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter 6-digit pincode" onFocus={() => setPincodeFocused(true)} onBlur={() => setPincodeFocused(false)} />
-                    <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${pincodeFocused || !!pincodeValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Pincode *</span>
-                  </div>
-                  <div className="h-4">{errors.pincode && <p className="text-xs text-red-500">{errors.pincode.message}</p>}</div>
-                </div>
-
+                <div className="h-4">{errors.fullName && <p className="text-xs text-red-500">{errors.fullName.message}</p>}</div>
               </div>
+
+              <div className="space-y-1">
+                <div className="relative">
+                  <input {...register("email")} type="email" className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter your email" onInput={() => clearErrors("email")} onFocus={() => setEmailFocused(true)} onBlur={() => setEmailFocused(false)} />
+                  <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${emailFocused || !!emailValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Email address *</span>
+                </div>
+                <div className="h-4">{errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}</div>
+              </div>
+
+              {/* Mobile & OTP (Kept same) */}
+              <div className="space-y-1">
+                <div className="relative">
+                  <input {...register("mobileNumber")} type="tel" disabled={isMobileVerified} onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, ''); if (e.currentTarget.value.length > 10) e.currentTarget.value = e.currentTarget.value.slice(0, 10); clearErrors("mobileNumber"); }} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary disabled:bg-gray-50 placeholder-transparent" placeholder="Enter mobile number" onFocus={() => setMobileFocused(true)} onBlur={() => setMobileFocused(false)} />
+                  {isSendingOtp && <div className="absolute right-3 top-2.5"><Loader2 className="w-4 h-4 text-primary animate-spin" /></div>}
+                  <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${mobileFocused || !!mobileNumber ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Mobile Number *</span>
+                </div>
+                <div className="h-4">
+                  {errors.mobileNumber && <p className="text-xs text-red-500">{errors.mobileNumber.message}</p>}
+                  {!errors.mobileNumber && otpSentMsg && !isMobileVerified && <p className="text-xs text-green-600">{otpSentMsg}</p>}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="relative">
+                  <input {...register("otp")} type="text" maxLength={4} disabled={!otpToken || isMobileVerified} onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, ''); setOtpError(""); clearErrors("otp"); }} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary disabled:bg-gray-50 placeholder-transparent" placeholder="Enter 4-digit OTP" onFocus={() => setOtpFocused(true)} onBlur={() => setOtpFocused(false)} />
+                  {isVerifyingOtp && <div className="absolute right-3 top-2.5"><Loader2 className="w-4 h-4 text-primary animate-spin" /></div>}
+                  {!isVerifyingOtp && isMobileVerified && (
+                    <div className="absolute right-3 top-2.5 pointer-events-none bg-white pl-1">
+                      <Check className="w-4 h-4 text-green-600" />
+                    </div>
+                  )}
+                  <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${otpFocused || !!enteredOtp ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>OTP *</span>
+                </div>
+                <div className="h-4">{otpError && <p className="text-xs text-red-500">{otpError}</p>}</div>
+              </div>
+
+              {/* --- DATE OF BIRTH SECTION --- */}
+              <div className="space-y-1 mt-1">
+                <div className="relative">
+                  <input
+                    {...dobRegister}
+                    type="date"
+                    max={new Date().toISOString().split("T")[0]}
+                    className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white placeholder-transparent"
+                    onFocus={() => setDobFocused(true)}
+                    onChange={(e) => {
+                      dobRegister.onChange(e);
+                      clearErrors("dateOfBirth");
+                    }}
+                    onBlur={(e) => {
+                      dobRegister.onBlur(e);
+                      setDobFocused(false);
+                    }}
+                  />
+
+                  {/* Icon Logic: Only show Green Check if valid */}
+                  {isDobValid && (
+                    <div className="absolute right-10 top-2.5 pointer-events-none bg-white pl-1">
+                      <Check className="w-4 h-4 text-green-600 animate-scaleIn" />
+                    </div>
+                  )}
+
+                  <span
+                    className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${dobFocused || !!dobValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-3 text-sm text-gray-700"}`}
+                  >
+                    Date of birth *
+                  </span>
+
+                </div>
+                <div className="h-4">
+                  {errors.dateOfBirth ? (
+                    <p className="text-xs text-red-500">{errors.dateOfBirth.message}</p>
+                  ) : isDobInvalid ? (
+                    <p className="text-xs text-red-500">Age must be between 21 and 60 years</p>
+                  ) : null}
+                </div>
+              </div>
+
+              {/* State, City, Pincode (Kept Same) */}
+              <div className="space-y-1 mt-1 relative" ref={stateDropdownRef}>
+                <input type="hidden" {...register("state")} />
+                <div onClick={() => setIsStateDropdownOpen(!isStateDropdownOpen)} className="relative w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white flex justify-between items-center cursor-pointer">
+                  <span className={selectedState ? "text-black" : "text-gray-500"}>{selectedState || "Select State"}</span>
+                  <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isStateDropdownOpen ? 'rotate-180' : ''}`} />
+                  <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${isStateDropdownOpen || !!selectedState ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Select State *</span>
+                </div>
+                {isStateDropdownOpen && (
+                  <ul className="absolute z-50 left-0 right-0 mt-1 bg-white border-2 border-gray-100 rounded-lg shadow-xl max-h-40 overflow-y-auto">
+                    {states.map((state) => (
+                      <li key={state} onClick={() => { setValue("state", state, { shouldValidate: true }); clearErrors("state"); setValue("city", ""); setIsStateDropdownOpen(false); }} className="px-3 py-2 text-sm hover:bg-gray-50 hover:text-primary cursor-pointer transition-colors">
+                        {state}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="h-4">{errors.state && <p className="text-xs text-red-500">{errors.state.message}</p>}</div>
+              </div>
+
+              <div className="space-y-1 mt-1">
+                <div className="relative">
+                  <input type="text" {...register("city")} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent" placeholder="Enter your city" onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/[^A-Za-z\s]/g, ''); clearErrors("city"); }} onFocus={() => setCityFocused(true)} onBlur={() => setCityFocused(false)} />
+                  <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${cityFocused || !!cityValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>City *</span>
+                </div>
+                <div className="h-4">{errors.city && <p className="text-xs text-red-500">{errors.city.message}</p>}</div>
+              </div>
+
+              <div className="space-y-1 mt-1">
+                <div className="relative">
+                  <input {...register("pincode")} type="text" maxLength={6} onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, ''); clearErrors("pincode"); }} className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent" placeholder="Enter 6-digit pincode" onFocus={() => setPincodeFocused(true)} onBlur={() => setPincodeFocused(false)} />
+                  <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${pincodeFocused || !!pincodeValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Pincode *</span>
+                </div>
+                <div className="h-4">{errors.pincode && <p className="text-xs text-red-500">{errors.pincode.message}</p>}</div>
+              </div>
+
             </div>
-          )}
+          </div>
+
 
           {/* Step 2: Business Details (Unchanged logic) */}
-          {currentStep === 2 && (
-            <div className={`space-y-1 ${isAnimating ? "animate-slideIn" : ""}`}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-1">
-                {/* Loan Amount */}
-                <div className="space-y-1">
-                  <div className="relative">
-                    <input {...register("loanAmount")} type="text" inputMode="numeric" className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent focus:placeholder-gray-500" placeholder="Enter loan amount (₹3L - ₹3Cr)" onInput={(e) => { const cleaned = e.currentTarget.value.replace(/[^0-9]/g, ""); clearErrors("loanAmount"); if (!cleaned) { setValue("loanAmount", "", { shouldValidate: false }); setLoanAmountWarning(""); lastLoanAmount.current = ""; return; } const n = Number(cleaned); if (n > 30000000) { setLoanAmountWarning("Maximum allowed is ₹3 Cr"); e.currentTarget.value = lastLoanAmount.current; setValue("loanAmount", lastLoanAmount.current, { shouldValidate: false }); return; } setLoanAmountWarning(n < 300000 ? "Minimum allowed is ₹3 Lakh" : ""); setValue("loanAmount", cleaned, { shouldValidate: false }); lastLoanAmount.current = cleaned; }} onBlur={(e) => { const cleaned = e.currentTarget.value.replace(/[^0-9]/g, ""); const n = Number(cleaned || "0"); if (cleaned === "") { setLoanAmountWarning(""); } else if (n > 30000000) { setLoanAmountWarning("Maximum allowed is ₹3 Cr"); e.currentTarget.value = lastLoanAmount.current; setValue("loanAmount", lastLoanAmount.current, { shouldValidate: false }); } else { setLoanAmountWarning(n < 300000 ? "Minimum allowed is ₹3 Lakh" : ""); setValue("loanAmount", cleaned, { shouldValidate: false }); lastLoanAmount.current = cleaned; } setLoanAmountFocused(false); }} onFocus={() => setLoanAmountFocused(true)} />
-                    <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${loanAmountFocused || !!loanAmountValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Loan Amount Required *</span>
-                  </div>
-                  <div className="h-4">{errors.loanAmount && <p className="text-xs text-red-500">{errors.loanAmount.message}</p>}{!errors.loanAmount && loanAmountWarning && <p className="text-xs text-red-500">{loanAmountWarning}</p>}</div>
+          <div className="space-y-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-1">
+              {/* Loan Amount */}
+              <div className="space-y-1">
+                <div className="relative">
+                  <input {...register("loanAmount")} type="text" inputMode="numeric" className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent" placeholder="Enter loan amount (₹3L - ₹3Cr)" onInput={(e) => { const cleaned = e.currentTarget.value.replace(/[^0-9]/g, ""); clearErrors("loanAmount"); if (!cleaned) { setValue("loanAmount", "", { shouldValidate: false }); setLoanAmountWarning(""); lastLoanAmount.current = ""; return; } const n = Number(cleaned); if (n > 30000000) { setLoanAmountWarning("Maximum allowed is ₹3 Cr"); e.currentTarget.value = lastLoanAmount.current; setValue("loanAmount", lastLoanAmount.current, { shouldValidate: false }); return; } setLoanAmountWarning(n < 300000 ? "Minimum allowed is ₹3 Lakh" : ""); setValue("loanAmount", cleaned, { shouldValidate: false }); lastLoanAmount.current = cleaned; }} onBlur={(e) => { const cleaned = e.currentTarget.value.replace(/[^0-9]/g, ""); const n = Number(cleaned || "0"); if (cleaned === "") { setLoanAmountWarning(""); } else if (n > 30000000) { setLoanAmountWarning("Maximum allowed is ₹3 Cr"); e.currentTarget.value = lastLoanAmount.current; setValue("loanAmount", lastLoanAmount.current, { shouldValidate: false }); } else { setLoanAmountWarning(n < 300000 ? "Minimum allowed is ₹3 Lakh" : ""); setValue("loanAmount", cleaned, { shouldValidate: false }); lastLoanAmount.current = cleaned; } setLoanAmountFocused(false); }} onFocus={() => setLoanAmountFocused(true)} />
+                  <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${loanAmountFocused || !!loanAmountValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Loan Amount Required *</span>
                 </div>
-                {/* Constitution */}
-                <div className="space-y-1">
-                  <div className="relative">
-                    <select
-                      {...constitutionRegister}
-                      className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white"
-                      onChange={(e) => {
-                        constitutionRegister.onChange(e);
-                        clearErrors("constitution");
-                      }}
-                      onBlur={(e) => {
-                        constitutionRegister.onBlur(e);
-                        setConstitutionFocused(false);
-                      }}
-                      onFocus={() => setConstitutionFocused(true)}
-                    >
-                      <option value="">Select Constitution</option>
-                      {constitutions.map((c) => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                    <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${constitutionFocused || !!constitutionValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Select Constitution *</span>
-                  </div>
-                  <div className="h-4">{errors.constitution && <p className="text-xs text-red-500">{errors.constitution.message}</p>}</div>
-                </div>
-                {/* Ownership */}
-                <div className="space-y-1 mt-4">
-                  <div className="relative">
-                    <select
-                      {...ownershipRegister}
-                      className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white"
-                      onChange={(e) => {
-                        ownershipRegister.onChange(e);
-                        clearErrors("ownershipProof");
-                      }}
-                      onBlur={(e) => {
-                        ownershipRegister.onBlur(e);
-                        setOwnershipFocused(false);
-                      }}
-                      onFocus={() => setOwnershipFocused(true)}
-                    >
-                      <option value="">Select Ownership Proof</option>
-                      {ownershipProofs.map((p) => <option key={p} value={p}>{p}</option>)}
-                    </select>
-                    <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${ownershipFocused || !!ownershipValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Select Ownership Proof *</span>
-                  </div>
-                  <div className="h-4">{errors.ownershipProof && <p className="text-xs text-red-500">{errors.ownershipProof.message}</p>}</div>
-                </div>
-                {/* Years */}
-                <div className="space-y-1 mt-4">
-                  <div className="relative">
-                    <select
-                      {...yearsRegister}
-                      className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white"
-                      onChange={(e) => {
-                        yearsRegister.onChange(e);
-                        clearErrors("yearsInBusiness");
-                      }}
-                      onBlur={(e) => {
-                        yearsRegister.onBlur(e);
-                        setYearsFocused(false);
-                      }}
-                      onFocus={() => setYearsFocused(true)}
-                    >
-                      <option value="">Select Years</option>
-                      {yearsInBusiness.map((y) => <option key={y} value={y}>{y}</option>)}
-                    </select>
-                    <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${yearsFocused || !!yearsValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Years in Business *</span>
-                  </div>
-                  <div className="h-4">{errors.yearsInBusiness && <p className="text-xs text-red-500">{errors.yearsInBusiness.message}</p>}</div>
-                </div>
-                {/* Turnover */}
-                <div className="space-y-1 mt-5">
-                  <div className="relative">
-                    <select
-                      {...turnoverRegister}
-                      className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white"
-                      onChange={(e) => {
-                        turnoverRegister.onChange(e);
-                        clearErrors("annualTurnover");
-                      }}
-                      onBlur={(e) => {
-                        turnoverRegister.onBlur(e);
-                        setTurnoverFocused(false);
-                      }}
-                      onFocus={() => setTurnoverFocused(true)}
-                    >
-                      <option value="">Select Turnover</option>
-                      {annualTurnovers.map((t) => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                    <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${turnoverFocused || !!turnoverValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Annual Turnover *</span>
-                  </div>
-                  <div className="h-4">{errors.annualTurnover && <p className="text-xs text-red-500">{errors.annualTurnover.message}</p>}</div>
-                </div>
-                {/* GST */}
-                <div className="space-y-2">
-                  <label className="block text-xs font-semibold text-gray-700">Is your Business GST registered? *</label>
-                  <div className="w-full border-2 border-gray-200 rounded-lg overflow-hidden h-[38px]">
-                    <div className="grid grid-cols-2 h-full">
-                      <label className="flex items-center justify-center gap-2 h-full cursor-pointer border-r border-gray-200">
-                        <input {...register("gstRegistered")} type="radio" value="yes" className="w-4 h-4 text-primary focus:ring-primary" onChange={() => clearErrors("gstRegistered")} />
-                        <span className="text-sm text-gray-700 font-medium">Yes</span>
-                      </label>
-                      <label className="flex items-center justify-center gap-2 h-full cursor-pointer">
-                        <input {...register("gstRegistered")} type="radio" value="no" className="w-4 h-4 text-primary focus:ring-primary" onChange={() => clearErrors("gstRegistered")} />
-                        <span className="text-sm text-gray-700 font-medium">No</span>
-                      </label>
-                    </div>
-                  </div>
-                  <div className="h-4">{errors.gstRegistered && <p className="text-xs text-red-500">{errors.gstRegistered.message}</p>}</div>
-                </div>
-
-                <ConsentSection />
+                <div className="h-4">{errors.loanAmount && <p className="text-xs text-red-500">{errors.loanAmount.message}</p>}{!errors.loanAmount && loanAmountWarning && <p className="text-xs text-red-500">{loanAmountWarning}</p>}</div>
               </div>
+              {/* Constitution */}
+              <div className="space-y-1">
+                <div className="relative">
+                  <select
+                    {...constitutionRegister}
+                    className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white"
+                    onChange={(e) => {
+                      constitutionRegister.onChange(e);
+                      clearErrors("constitution");
+                    }}
+                    onBlur={(e) => {
+                      constitutionRegister.onBlur(e);
+                      setConstitutionFocused(false);
+                    }}
+                    onFocus={() => setConstitutionFocused(true)}
+                  >
+                    <option value="">Select Constitution</option>
+                    {constitutions.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${constitutionFocused || !!constitutionValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Select Constitution *</span>
+                </div>
+                <div className="h-4">{errors.constitution && <p className="text-xs text-red-500">{errors.constitution.message}</p>}</div>
+              </div>
+              {/* Ownership */}
+              <div className="space-y-1 mt-4">
+                <div className="relative">
+                  <select
+                    {...ownershipRegister}
+                    className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary bg-white"
+                    onChange={(e) => {
+                      ownershipRegister.onChange(e);
+                      clearErrors("ownershipProof");
+                    }}
+                    onBlur={(e) => {
+                      ownershipRegister.onBlur(e);
+                      setOwnershipFocused(false);
+                    }}
+                    onFocus={() => setOwnershipFocused(true)}
+                  >
+                    <option value="">Select Ownership Proof</option>
+                    {ownershipProofs.map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                  <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${ownershipFocused || !!ownershipValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Select Ownership Proof *</span>
+                </div>
+                <div className="h-4">{errors.ownershipProof && <p className="text-xs text-red-500">{errors.ownershipProof.message}</p>}</div>
+              </div>
+              {/* Years */}
+              <div className="space-y-1 mt-4">
+                <div className="relative">
+                  <input
+                    {...yearsRegister}
+                    type="text"
+                    className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent"
+                    placeholder="Vintage (Years)"
+                    onInput={(e) => {
+                      e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
+                      clearErrors("yearsInBusiness");
+                    }}
+                    onFocus={() => setYearsFocused(true)}
+                    onBlur={(e) => {
+                      yearsRegister.onBlur(e);
+                      setYearsFocused(false);
+                    }}
+                  />
+                  <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${yearsFocused || !!yearsValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Vintage (Years) *</span>
+                </div>
+                <div className="h-4">{errors.yearsInBusiness && <p className="text-xs text-red-500">{errors.yearsInBusiness.message}</p>}</div>
+              </div>
+              {/* Turnover */}
+              <div className="space-y-1 mt-5">
+                <div className="relative">
+                  <input
+                    {...turnoverRegister}
+                    type="text"
+                    className="peer w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary placeholder-transparent"
+                    placeholder="Annual Turnover"
+                    onInput={(e) => {
+                      e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
+                      clearErrors("annualTurnover");
+                    }}
+                    onFocus={() => setTurnoverFocused(true)}
+                    onBlur={(e) => {
+                      turnoverRegister.onBlur(e);
+                      setTurnoverFocused(false);
+                    }}
+                  />
+                  <span className={`pointer-events-none absolute left-3 bg-white px-1 transition-all duration-200 ${turnoverFocused || !!turnoverValue ? "-top-3 text-xs font-semibold text-gray-700" : "top-2 text-sm text-gray-700"}`}>Annual Turnover *</span>
+                </div>
+                <div className="h-4">{errors.annualTurnover && <p className="text-xs text-red-500">{errors.annualTurnover.message}</p>}</div>
+              </div>
+              {/* GST */}
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-gray-700">Is your Business GST registered? *</label>
+                <div className="w-full border-2 border-gray-200 rounded-lg overflow-hidden h-[38px]">
+                  <div className="grid grid-cols-2 h-full">
+                    <label className="flex items-center justify-center gap-2 h-full cursor-pointer border-r border-gray-200">
+                      <input {...register("gstRegistered")} type="radio" value="yes" className="w-4 h-4 text-primary focus:ring-primary" onChange={() => clearErrors("gstRegistered")} />
+                      <span className="text-sm text-gray-700 font-medium">Yes</span>
+                    </label>
+                    <label className="flex items-center justify-center gap-2 h-full cursor-pointer">
+                      <input {...register("gstRegistered")} type="radio" value="no" className="w-4 h-4 text-primary focus:ring-primary" onChange={() => clearErrors("gstRegistered")} />
+                      <span className="text-sm text-gray-700 font-medium">No</span>
+                    </label>
+                  </div>
+                </div>
+                <div className="h-4">{errors.gstRegistered && <p className="text-xs text-red-500">{errors.gstRegistered.message}</p>}</div>
+              </div>
+
+              <ConsentSection />
             </div>
-          )}
+          </div>
+
 
           {/* Navigation Buttons */}
           <div className="pt-0 border-t-2 border-gray-100">
-            {currentStep < totalSteps ? (
-              <button type="button" onClick={(e) => { e.preventDefault(); nextStep(); }} className="w-full px-6 py-3 bg-gradient-to-r from-primary to-secondary-burgundy text-white rounded-lg text-sm font-semibold hover:from-secondary-burgundy transition-all shadow-lg flex items-center justify-center gap-2">
-                Apply Now
-              </button>
-            ) : (
-              <button type="submit" disabled={isSubmitting} className="w-full px-6 py-3 bg-gradient-to-r from-primary to-secondary-burgundy text-white rounded-lg text-sm font-semibold hover:from-secondary-burgundy transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-70">
-                {isSubmitting ? "Submitting..." : "Apply Now"}
-              </button>
-            )}
+            <button type="submit" disabled={isSubmitting} className="w-full px-6 py-3 bg-gradient-to-r from-primary to-secondary-burgundy text-white rounded-lg text-sm font-semibold hover:from-secondary-burgundy transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-70">
+              {isSubmitting ? "Submitting..." : "Apply Now"}
+            </button>
             <div className="h-5 mt-2">
               {submitError && <p className="text-xs text-red-600 text-center">{submitError}</p>}
             </div>
